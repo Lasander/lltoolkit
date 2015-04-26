@@ -12,48 +12,94 @@
 
 namespace Data {
 
-template <typename T>
-class DataModel : public Publisher<T>
+/**
+ * Data model of given type. Model contains data which can be set and get.
+ * Additionally one can register to receive synchronous notification of the
+ * model value change.
+ *
+ * @tparam DataType Data type
+ */
+template <typename DataType>
+class DataModel : public Publisher<DataType>
 {
 public:
+    /** Construct DataModel with default data */
     DataModel();
-    DataModel(const T& data);
+
+    /**
+     * Construct DataModel by copying given initial data
+     *
+     * @param data Initial data
+     */
+    DataModel(const DataType& data);
+
+    /**
+     * Construct DataModel by moving given initial data
+     *
+     * @param data Initial data
+     */
+    DataModel(DataType&& data);
+
+    /** Virtual dtor */
     virtual ~DataModel();
 
-    void set(const T& data);
-    const T& get() const;
+    /**
+     * Set model value
+     *
+     * @param data New value
+     */
+    void set(const DataType& data);
+
+    /**
+     * @return Model value
+     */
+    const DataType& get() const;
 
 private:
-    T data_;
-    Publisher<T> dataPublisher_;
+    /** Prevent copy, move and assignment */
+    DataModel(const DataModel&);
+    DataModel(DataModel&&);
+    DataModel& operator=(const DataModel&);
+
+    /** Model data */
+    DataType data_;
 };
 
-template <typename T>
-DataModel<T>::DataModel()
+template <typename DataType>
+DataModel<DataType>::DataModel()
  : data_{}
 {
 }
 
-template <typename T>
-DataModel<T>::DataModel(const T& data)
+template <typename DataType>
+DataModel<DataType>::DataModel(const DataType& data)
   : data_(data)
 {
 }
 
-template <typename T>
-DataModel<T>::~DataModel()
+template <typename DataType>
+DataModel<DataType>::DataModel(DataType&& data)
+  : data_(data)
 {
 }
 
-template <typename T>
-void DataModel<T>::set(const T& data)
+template <typename DataType>
+DataModel<DataType>::~DataModel()
 {
-    data_ = data;
-    Publisher<T>::notifySubscribers(data_);
 }
 
-template <typename T>
-const T& DataModel<T>::get() const
+template <typename DataType>
+void DataModel<DataType>::set(const DataType& data)
+{
+    if (data_ != data)
+    {
+        data_ = data;
+        Publisher<DataType>::notifySubscribers(data_);
+    }
+}
+
+template <typename DataType>
+const DataType& DataModel<DataType>::get() const
 {
     return data_;
 }
