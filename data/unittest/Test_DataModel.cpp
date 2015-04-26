@@ -42,7 +42,7 @@ public:
      * Receive notification of data change including data by value.
      * Sets data_ to "data + additional_".
      */
-    void notifyValue(T data);
+    T notifyValue(T data);
     /**
      * Receive notification of data change ignoring the data.
      * Sets data_ to "additional_".
@@ -58,9 +58,10 @@ template <typename T> void Subscriber<T>::notifyReference(const T& data)
 {
     data_ = data + additional_;
 }
-template <typename T> void Subscriber<T>::notifyValue(T data)
+template <typename T> T Subscriber<T>::notifyValue(T data)
 {
     data_ = data + additional_;
+    return data_;
 }
 template <typename T> void Subscriber<T>::notifyEmpty()
 {
@@ -91,9 +92,10 @@ void notifyFuncValue(int data)
  * Receive notification of data change ignoring the data.
  * Sets funcData to "99".
  */
-void notifyFuncEmpty()
+int notifyFuncEmpty()
 {
     funcData = 99;
+    return funcData;
 }
 
 } // anonymous namespace

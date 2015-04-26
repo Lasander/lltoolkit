@@ -17,110 +17,154 @@ namespace Data {
 template <typename DataType>
 class Publisher
 {
-    class CallbackIf
-    {
-    public:
-        virtual void operator()(const DataType& data) = 0;
-        virtual ~CallbackIf() {}
-    };
-
-    template <typename R, typename... Args>
-    class FunctionCallback : public CallbackIf
-    {
-        std::function<R(const DataType&)> function_;
-    public:
-        FunctionCallback(std::function<R(const DataType& data)> function)
-          : function_(function)
-        {
-        }
-        FunctionCallback(std::function<R(Args...)> function)
-          : function_(std::bind(function))
-        {
-        }
-        virtual ~FunctionCallback() {}
-
-        virtual void operator()(const DataType& data)
-        {
-            function_(data);
-        }
-    };
-
-    using SubscriberMap = std::map<void*, std::shared_ptr<CallbackIf>>;
-    SubscriberMap subscribers_;
-
 public:
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)(const DataType&))
-    {
-        std::function<ReturnType(const DataType&)> f = std::bind(callback, &object, std::placeholders::_1);
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(f));
-    }
+    bool subscribe(Object& object, ReturnType (Object::*callback)(const DataType&));
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)(DataType))
-    {
-        std::function<ReturnType(const DataType&)> f = std::bind(callback, &object, std::placeholders::_1);
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(f));
-    }
+    bool subscribe(Object& object, ReturnType (Object::*callback)(DataType));
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)())
-    {
-        std::function<ReturnType(const DataType&)> f = std::bind(callback, &object);
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(f));
-    }
+    bool subscribe(Object& object, ReturnType (Object::*callback)());
 
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)(const DataType&))
-    {
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(callback));
-    }
+    bool subscribe(Object& object, ReturnType (*callback)(const DataType&));
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)(DataType))
-    {
-        std::function<ReturnType(const DataType&)> f = std::bind(callback, std::placeholders::_1);
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(f));
-    }
+    bool subscribe(Object& object, ReturnType (*callback)(DataType));
     template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)())
-    {
-        std::function<ReturnType(const DataType&)> f = std::bind(callback);
-        return addSubscriber(&object, std::make_shared<FunctionCallback<ReturnType>>(f));
-    }
+    bool subscribe(Object& object, ReturnType (*callback)());
 
     template <typename Object>
-    bool unsubscribe(Object& object)
-    {
-        return removeSubscriber(&object);
-    }
+    bool unsubscribe(Object& object);
 
 protected:
-    void notifySubscribers(const DataType& data)
-    {
-        for (auto& sub : subscribers_)
-            sub.second->operator()(data);
-    }
+    void notifySubscribers(const DataType& data);
 
 private:
-    bool addSubscriber(void* object, std::shared_ptr<CallbackIf> callable)
+    class Callback
     {
-        const typename SubscriberMap::value_type entry{object, callable};
-        if (!subscribers_.insert(entry).second)
-        {
-            std::fprintf(stderr, "Failed to add subscriber: duplicate\n");
-            return false;
-        }
-        return true;
-    }
+        std::function<void(const DataType&)> function_;
+    public:
+        Callback(std::function<void(const DataType&)> function);
+        template <typename R> Callback(std::function<R(const DataType&)> function);
+        ~Callback();
 
-    bool removeSubscriber(void* object)
-    {
-        if (subscribers_.erase(object) < 1)
-        {
-            std::fprintf(stderr, "Failed to remove subscriber: non-existent\n");
-            return false;
-        }
-        return true;
-    }
+        void operator()(const DataType& data);
+    };
+
+    using SubscriberMap = std::map<void*, std::shared_ptr<Callback>>;
+    SubscriberMap subscribers_;
+
+    bool addSubscriber(void* object, std::shared_ptr<Callback> callable);
+    bool removeSubscriber(void* object);
+
+private:
+
 };
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)(const DataType&))
+{
+    std::function<ReturnType(const DataType&)> f = std::bind(callback, &object, std::placeholders::_1);
+    return addSubscriber(&object, std::make_shared<Callback>(f));
+}
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)(DataType))
+{
+    std::function<ReturnType(const DataType&)> f = std::bind(callback, &object, std::placeholders::_1);
+    return addSubscriber(&object, std::make_shared<Callback>(f));
+}
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)())
+{
+    std::function<ReturnType(const DataType&)> f = std::bind(callback, &object);
+    return addSubscriber(&object, std::make_shared<Callback>(f));
+}
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)(const DataType&))
+{
+    return addSubscriber(&object, std::make_shared<Callback>(callback));
+}
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)(DataType))
+{
+    std::function<ReturnType(const DataType&)> f = std::bind(callback, std::placeholders::_1);
+    return addSubscriber(&object, std::make_shared<Callback>(f));
+}
+
+template <typename DataType>
+template <typename Object, typename ReturnType>
+bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)())
+{
+    std::function<ReturnType(const DataType&)> f = std::bind(callback);
+    return addSubscriber(&object, std::make_shared<Callback>(f));
+}
+
+template <typename DataType>
+template <typename Object>
+bool Publisher<DataType>::unsubscribe(Object& object)
+{
+    return removeSubscriber(&object);
+}
+
+template <typename DataType>
+void Publisher<DataType>::notifySubscribers(const DataType& data)
+{
+    for (auto& sub : subscribers_)
+        sub.second->operator()(data);
+}
+
+template <typename DataType>
+bool Publisher<DataType>::addSubscriber(void* object, std::shared_ptr<Callback> callable)
+{
+    const typename SubscriberMap::value_type entry{object, callable};
+    if (!subscribers_.insert(entry).second)
+    {
+        std::fprintf(stderr, "Failed to add subscriber: duplicate\n");
+        return false;
+    }
+    return true;
+}
+
+template <typename DataType>
+bool Publisher<DataType>::removeSubscriber(void* object)
+{
+    if (subscribers_.erase(object) < 1)
+    {
+        std::fprintf(stderr, "Failed to remove subscriber: non-existent\n");
+        return false;
+    }
+    return true;
+}
+
+template <typename DataType>
+Publisher<DataType>::Callback::Callback(std::function<void(const DataType&)> function)
+  : function_(function)
+{
+}
+
+template <typename DataType>
+template <typename R>
+Publisher<DataType>::Callback::Callback(std::function<R(const DataType&)> function)
+  : Callback([=](const DataType& data) -> void { (void)function(data); })
+{
+}
+
+template <typename DataType>
+Publisher<DataType>::Callback::~Callback() {}
+
+template <typename DataType>
+void Publisher<DataType>::Callback::operator()(const DataType& data)
+{
+    function_(data);
+}
 
 } // Data
 
