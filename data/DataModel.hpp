@@ -5,10 +5,10 @@
  *      Author: lasse
  */
 
-#ifndef DATA_DATAMODEL_H_
-#define DATA_DATAMODEL_H_
+#ifndef DATA_DATAMODEL_HPP_
+#define DATA_DATAMODEL_HPP_
 
-#include "Publisher.h"
+#include "Publisher.hpp"
 
 namespace Data {
 
@@ -106,4 +106,4 @@ const DataType& DataModel<DataType>::get() const
 
 }  // namespace Data
 
-#endif /* DATA_DATAMODEL_H_ */
+#endif /* DATA_DATAMODEL_HPP_ */

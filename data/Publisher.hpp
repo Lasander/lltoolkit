@@ -5,8 +5,8 @@
  *      Author: lasse
  */
 
-#ifndef DATA_PUBLISHER_H_
-#define DATA_PUBLISHER_H_
+#ifndef DATA_PUBLISHER_HPP_
+#define DATA_PUBLISHER_HPP_
 
 #include <map>
 #include <functional>
@@ -196,4 +196,4 @@ bool Publisher<DataType>::removeSubscriber(void* object)
 
 } // Data
 
-#endif /* DATA_PUBLISHER_H_ */
+#endif /* DATA_PUBLISHER_HPP_ */
