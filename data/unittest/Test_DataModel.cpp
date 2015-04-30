@@ -1,15 +1,39 @@
-#include "../DataModel.h"
+#include "../DataModel.hpp"
 #include "gtest/gtest.h"
 
 namespace Data {
 
-TEST(DataModelTest, setter)
+TEST(DataModelTest, defaultConstructor)
+{
+    DataModel<std::string> data;
+
+    EXPECT_EQ(std::string(""), data.get());
+}
+
+TEST(DataModelTest, constructor)
+{
+    const std::string str = "Test string with some data to make it not so short.";
+    DataModel<std::string> data(str);
+
+    EXPECT_EQ(str, data.get());
+}
+
+TEST(DataModelTest, moveConstructor)
+{
+    std::string str = "Test string with some data to make it not so short.";
+    DataModel<std::string> data(std::move(str));
+
+    EXPECT_EQ(std::string("Test string with some data to make it not so short."), data.get());
+}
+
+TEST(DataModelTest, setAndGet)
 {
     DataModel<int> data;
     data.set(2);
-    
+
     EXPECT_EQ(2, data.get());
 }
+
 
 namespace {
 
