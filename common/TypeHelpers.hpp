@@ -10,6 +10,8 @@
 
 #include <tuple>
 #include <type_traits>
+#include <memory>
+#include <utility>
 
 namespace Common {
 
@@ -55,6 +57,50 @@ struct has_duplicate<std::tuple<T, Ts...>> : has_duplicate<std::tuple<Ts...>> { 
  */
 template <typename Tuple>
 using tuple_contains_duplicates = typename has_duplicate<Tuple>::type;
+
+
+template <class T, std::size_t N, class... Args>
+struct get_number_of_element_from_tuple_by_type_impl
+{
+    static constexpr auto value = N;
+};
+
+template <class T, std::size_t N, class... Args>
+struct get_number_of_element_from_tuple_by_type_impl<T, N, T, Args...>
+{
+    static constexpr auto value = N;
+};
+
+template <class T, std::size_t N, class U, class... Args>
+struct get_number_of_element_from_tuple_by_type_impl<T, N, U, Args...>
+{
+    static constexpr auto value = get_number_of_element_from_tuple_by_type_impl<T, N + 1, Args...>::value;
+};
+
+template <class T, class... Args>
+T get_element_by_type(const std::tuple<Args...>& t)
+{
+    return std::get<get_number_of_element_from_tuple_by_type_impl<T, 0, Args...>::value>(t);
+}
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
+   static_assert(std::extent<T>::value == 0,
+       "make_unique<T[N]>() is forbidden, please use make_unique<T[]>().");
+
+   typedef typename std::remove_extent<T>::type U;
+   return std::unique_ptr<T>(new U[sizeof...(Args)]{std::forward<Args>(args)...});
+}
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+   return make_unique_helper<T>(std::is_array<T>(), std::forward<Args>(args)...);
+}
 
 } // namespace Common
 
