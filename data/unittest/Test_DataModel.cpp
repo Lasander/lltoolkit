@@ -1,16 +1,85 @@
 #include "../DataModel.hpp"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+using namespace testing;
 
 namespace Data {
+namespace {
 
-TEST(DataModelTest, defaultConstructor)
+/**
+ * Test subscriber containing data of given type.
+ * @tparam T data type
+ */
+template<typename T>
+class Subscriber
+{
+public:
+    MOCK_METHOD1_T(notifyReference, void(const T& data));
+    MOCK_METHOD1_T(notifyValue, T(T data));
+    MOCK_METHOD0_T(notifyEmpty, void());
+};
+
+//Subscriber<int> freeFunctionSubscriberG;
+
+template <class T>
+class DataModelTest : public testing::Test
+{
+protected:
+	DataModelTest() :
+		data{},
+		pub{data.publisher()},
+		sub{}
+	{
+		currentSubscriber = &sub;
+	}
+
+	~DataModelTest()
+	{
+		currentSubscriber = nullptr;
+	}
+
+	DataModel<T> data;
+    Publisher<T>& pub;
+    StrictMock<Subscriber<T>> sub;
+
+public:
+    /** Static link to current subscriber for free functions */
+    static Subscriber<T>* currentSubscriber;
+};
+template <class T> Subscriber<T>* DataModelTest<T>::currentSubscriber = nullptr;
+
+template<class T>
+void notifyFuncReference(const T& data)
+{
+	DataModelTest<T>::currentSubscriber->notifyReference(data);
+}
+template<class T>
+void notifyFuncValue(T data)
+{
+	DataModelTest<T>::currentSubscriber->notifyValue(data);
+}
+template<class T>
+int notifyFuncEmpty()
+{
+	DataModelTest<T>::currentSubscriber->notifyEmpty();
+    return 99;
+}
+
+} // anonymous namespace
+
+typedef DataModelTest<int> IntDataModelTest;
+typedef DataModelTest<double> DoubleDataModelTest;
+typedef DataModelTest<std::string> StringDataModelTest;
+
+TEST_F(StringDataModelTest, defaultConstructor)
 {
     DataModel<std::string> data;
 
     EXPECT_EQ(std::string(""), data.get());
 }
 
-TEST(DataModelTest, constructor)
+TEST_F(StringDataModelTest, constructor)
 {
     const std::string str = "Test string with some data to make it not so short.";
     DataModel<std::string> data(str);
@@ -18,7 +87,7 @@ TEST(DataModelTest, constructor)
     EXPECT_EQ(str, data.get());
 }
 
-TEST(DataModelTest, moveConstructor)
+TEST_F(StringDataModelTest, moveConstructor)
 {
     std::string str = "Test string with some data to make it not so short.";
     DataModel<std::string> data(std::move(str));
@@ -26,7 +95,7 @@ TEST(DataModelTest, moveConstructor)
     EXPECT_EQ(std::string("Test string with some data to make it not so short."), data.get());
 }
 
-TEST(DataModelTest, setAndGet)
+TEST_F(IntDataModelTest, setAndGet)
 {
     DataModel<int> data;
     data.set(2);
@@ -34,187 +103,98 @@ TEST(DataModelTest, setAndGet)
     EXPECT_EQ(2, data.get());
 }
 
-
-namespace {
-
-/**
- * Test subscriber containing data of given type.
- *
- * @tparam T data type
- */
-template<typename T>
-class Subscriber
+TEST_F(IntDataModelTest, methodNotifyReference)
 {
-    /** Additional data used in notifications. */
-    T additional_;
+    EXPECT_TRUE(pub.subscribe(sub, &Subscriber<int>::notifyReference));
 
-public:
-    /** Data */
-    T data_;
-
-    /**
-     * Construct Subscriber with given additional data.
-     */
-    Subscriber(const T& additional);
-
-    /**
-     * Receive notification of data change including data by const ref.
-     * Sets data_ to "data + additional_".
-     */
-    void notifyReference(const T& data);
-    /**
-     * Receive notification of data change including data by value.
-     * Sets data_ to "data + additional_".
-     */
-    T notifyValue(T data);
-    /**
-     * Receive notification of data change ignoring the data.
-     * Sets data_ to "additional_".
-     */
-    void notifyEmpty();
-};
-
-template <typename T> Subscriber<T>::Subscriber(const T& additional)
-  : additional_{additional}, data_{}
-{
-}
-template <typename T> void Subscriber<T>::notifyReference(const T& data)
-{
-    data_ = data + additional_;
-}
-template <typename T> T Subscriber<T>::notifyValue(T data)
-{
-    data_ = data + additional_;
-    return data_;
-}
-template <typename T> void Subscriber<T>::notifyEmpty()
-{
-    data_ = additional_;
-}
-
-
-/** Data modified by the notification functions */
-int funcData = 0;
-
-/**
- * Receive notification of data change including data by const ref.
- * Sets funcData to "data".
- */
-void notifyFuncReference(const int& data)
-{
-    funcData = data;
-}
-/**
- * Receive notification of data change including data by value.
- * Sets funcData to "data * 2".
- */
-void notifyFuncValue(int data)
-{
-    funcData = data * 2;
-}
-/**
- * Receive notification of data change ignoring the data.
- * Sets funcData to "99".
- */
-int notifyFuncEmpty()
-{
-    funcData = 99;
-    return funcData;
-}
-
-} // anonymous namespace
-
-TEST(DataModelTest, methodNotifyReference)
-{
-    DataModel<int> data;
-    Subscriber<int> sub(2);
-    EXPECT_TRUE(data.subscribe(sub, &Subscriber<int>::notifyReference));
-
+    EXPECT_CALL(sub, notifyReference(3));
     data.set(3);
-    EXPECT_EQ(2 + 3, sub.data_);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, methodNotifyValue)
+TEST_F(StringDataModelTest, methodNotifyValue)
 {
-    DataModel<double> data;
-    Subscriber<double> sub(5.6);
-    EXPECT_TRUE(data.subscribe(sub, &Subscriber<double>::notifyValue));
+    EXPECT_TRUE(pub.subscribe(sub, &Subscriber<std::string>::notifyValue));
 
-    data.set(4.1);
-    EXPECT_DOUBLE_EQ(5.6 + 4.1, sub.data_);
+    const char* testString = "test n0tification";
+    EXPECT_CALL(sub, notifyValue(testString));
+    data.set(testString);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, methodNotifyEmpty)
+TEST_F(StringDataModelTest, methodNotifyEmpty)
 {
-    DataModel<int> data;
-    Subscriber<std::string> sub("additional");
-    EXPECT_TRUE(data.subscribe(sub, &Subscriber<std::string>::notifyEmpty));
+    EXPECT_TRUE(pub.subscribe(sub, &Subscriber<std::string>::notifyEmpty));
 
-    data.set(4);
-    EXPECT_STREQ("additional", sub.data_.c_str());
+    EXPECT_CALL(sub, notifyEmpty());
+    data.set("test data");
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, functionNotifyReference)
+TEST_F(IntDataModelTest, functionNotifyReference)
 {
-    DataModel<int> data;
-    Subscriber<int> sub(1);
-    EXPECT_TRUE(data.subscribe(sub, &notifyFuncReference));
+    EXPECT_TRUE(pub.subscribe(sub, &notifyFuncReference<int>));
 
+    EXPECT_CALL(sub, notifyReference(3));
     data.set(3);
-    EXPECT_EQ(3, funcData);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, functionNotifyValue)
+TEST_F(StringDataModelTest, functionNotifyValue)
 {
-    DataModel<int> data;
-    Subscriber<int> sub(1);
-    EXPECT_TRUE(data.subscribe(sub, &notifyFuncValue));
+    EXPECT_TRUE(pub.subscribe(sub, &notifyFuncValue<std::string>));
 
-    data.set(4);
-    EXPECT_EQ(8, funcData);
+    const char* testString = "test string";
+    EXPECT_CALL(sub, notifyValue(testString));
+    data.set(testString);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, functionNotifyEmpty)
+TEST_F(DoubleDataModelTest, functionNotifyEmpty)
 {
-    DataModel<int> data;
-    Subscriber<int> sub(1);
-    EXPECT_TRUE(data.subscribe(sub, &notifyFuncEmpty));
+    EXPECT_TRUE(pub.subscribe(sub, &notifyFuncEmpty<double>));
 
-    data.set(4);
-    EXPECT_EQ(99, funcData);
+    EXPECT_CALL(sub, notifyEmpty());
+    data.set(4.565);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
 }
 
-TEST(DataModelTest, doubleSubscribe)
+TEST_F(IntDataModelTest, publishOnlyWhenRequested)
 {
-    DataModel<int> data;
-    Subscriber<int> sub(1);
-    EXPECT_TRUE(data.subscribe(sub, &notifyFuncEmpty));
-    EXPECT_FALSE(data.subscribe(sub, &notifyFuncValue));
+    EXPECT_TRUE(pub.subscribe(sub, &notifyFuncEmpty<int>));
 
+    data.setInternal(5);
+    data.setInternal(6);
+
+    EXPECT_CALL(sub, notifyEmpty());
+    data.publishPendingChanges();
+
+    EXPECT_TRUE(pub.unsubscribe(sub));
+}
+
+TEST_F(IntDataModelTest, doubleSubscribe)
+{
+    EXPECT_TRUE(pub.subscribe(sub, &notifyFuncEmpty<int>));
+    EXPECT_FALSE(pub.subscribe(sub, &notifyFuncValue<int>));
+
+    EXPECT_CALL(sub, notifyEmpty());
     data.set(55);
-    EXPECT_EQ(99, funcData);
 
-    EXPECT_TRUE(data.unsubscribe(sub));
-    EXPECT_FALSE(data.unsubscribe(sub));
+    EXPECT_TRUE(pub.unsubscribe(sub));
+    EXPECT_FALSE(pub.unsubscribe(sub));
 }
 
 } // Data
 
-int main(int argc, char **argv)
-{
-    freopen("/dev/null", "w", stderr);
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}
+//int main(int argc, char **argv)
+//{
+//    freopen("/dev/null", "w", stderr);
+//    ::testing::InitGoogleTest(&argc, argv);
+//    return RUN_ALL_TESTS();
+//}

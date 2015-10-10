@@ -29,45 +29,52 @@ template <typename DataType>
 class Publisher
 {
 public:
-    virtual ~Publisher() {}
+    Publisher();
+    ~Publisher();
 
     /**
      * Subscribe to receive change notifications to a member function. If function takes
      * a parameter the data is passed in.
      *
+     * @tparam SubscriberType Type of the subscriber object
+     * @tparam InterfaceType Interface type where the callback member function can be found.
+     * 		   Needs to be either Subscriber or its base class.
+     * @tparam ReturnType Callback member function return type.
+     *
+     * Note: all template parameters are deduced from the argument types.
+     *
      * @param object Object to call
      * @param callback Member function to call
      */
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)(const DataType&));
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)(DataType));
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (Object::*callback)());
+    template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)(const DataType&));
+    template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)(DataType));
+    template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)());
 
     /**
      * Subscribe to receive change notifications to a free function. If function takes
      * a parameter the data is passed in.
      *
+     * @tparam SubscriberType Type of the subscriber object
+     * @tparam ReturnType Callback function return type.
+     *
      * @param object Object used as identifier of the subscription
      * @param callback Function to call
      */
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)(const DataType&));
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)(DataType));
-    template <typename Object, typename ReturnType>
-    bool subscribe(Object& object, ReturnType (*callback)());
+    template <typename SubscriberType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (*callback)(const DataType&));
+    template <typename SubscriberType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (*callback)(DataType));
+    template <typename SubscriberType, typename ReturnType>
+    bool subscribe(SubscriberType& object, ReturnType (*callback)());
 
     /**
      * Unsubscribe from change notifications.
      */
-    template <typename Object>
-    bool unsubscribe(Object& object);
-
-protected:
-    /** Constructor for derived classes */
-    Publisher();
+    template <typename SubscriberType>
+    bool unsubscribe(SubscriberType& object);
 
     /**
      * Notify subscribers of data change. Should be called by the data owner
@@ -106,48 +113,48 @@ private:
 };
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)(const DataType&))
+template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)(const DataType&))
 {
     const std::function<void(const DataType&)> f = [&object, callback](const DataType& data) { (object.*callback)(data); };
     return addSubscriber(&object, f);
 }
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)(DataType))
+template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)(DataType))
 {
     std::function<void(const DataType&)> f = [&object, callback](const DataType& data) { (object.*callback)(data); };
     return addSubscriber(&object, f);
 }
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (Object::*callback)())
+template <typename SubscriberType, typename InterfaceType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)())
 {
     std::function<void(const DataType&)> f = [&object, callback](const DataType& data) { (object.*callback)(); };
     return addSubscriber(&object, f);
 }
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)(const DataType&))
+template <typename SubscriberType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (*callback)(const DataType&))
 {
     std::function<void(const DataType&)> f = [callback](const DataType& data) { callback(data); };
     return addSubscriber(&object, f);
 }
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)(DataType))
+template <typename SubscriberType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (*callback)(DataType))
 {
     std::function<void(const DataType&)> f = [callback](const DataType& data) { callback(data); };
     return addSubscriber(&object, f);
 }
 
 template <typename DataType>
-template <typename Object, typename ReturnType>
-bool Publisher<DataType>::subscribe(Object& object, ReturnType (*callback)())
+template <typename SubscriberType, typename ReturnType>
+bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (*callback)())
 {
     std::function<void(const DataType&)> f = [callback](const DataType& data) { callback(); };
     return addSubscriber(&object, f);
@@ -162,6 +169,11 @@ bool Publisher<DataType>::unsubscribe(Object& object)
 
 template <typename DataType>
 Publisher<DataType>::Publisher()
+{
+}
+
+template <typename DataType>
+Publisher<DataType>::~Publisher()
 {
 }
 

@@ -42,7 +42,7 @@ find_package(Threads)
 
 function(cxx_test name sources)
     add_executable(${name} ${sources})
-    target_link_libraries(${name} ${ARGN} gtest ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} ${ARGN} gtest gmock ${CMAKE_THREAD_LIBS_INIT})
     set_property(TARGET ${name} APPEND PROPERTY INCLUDE_DIRECTORIES
                  ${GTEST_INCLUDE_DIRS}
                  )

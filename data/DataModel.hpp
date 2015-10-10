@@ -9,18 +9,23 @@
 #define DATA_DATAMODEL_HPP_
 
 #include "Publisher.hpp"
+#include "DataModelIf.hpp"
+#include <utility>
+#include <functional>
 
 namespace Data {
 
 /**
- * Data model of given type. Model contains data which can be set and get.
+ * Implementation of a data model interface. Contains data which can be set and get.
  * Additionally one can register to receive synchronous notification of the
- * model value change.
+ * model value change using the attached publisher.
+ *
+ * Not thread-safe.
  *
  * @tparam DataType Data type
  */
-template <typename DataType>
-class DataModel : public Publisher<DataType>
+template <typename DataType, typename Less = std::less<DataType>>
+class DataModel : public DataModelIf<DataType>
 {
 public:
     /** Construct DataModel with default data */
@@ -48,60 +53,102 @@ public:
      *
      * @param data New value
      */
-    void set(const DataType& data);
+    virtual void set(const DataType& data);
 
     /**
      * @return Model value
      */
-    const DataType& get() const;
+    virtual const DataType& get() const;
+
+    /** @return publisher */
+	virtual Publisher<DataType>& publisher();
+
+    /** Set internal model value to @p data, but do not publish the change. */
+    void setInternal(const DataType& data);
+
+    /** Publish any pending (unpublished) changes to the model. If there are no pending changes, does nothing. */
+    void publishPendingChanges();
 
 private:
-    /** Prevent copy, move and assignment */
-    DataModel(const DataModel&);
-    DataModel(DataModel&&);
-    DataModel& operator=(const DataModel&);
-
     /** Model data */
     DataType data_;
+
+    /** Publisher */
+    Publisher<DataType> publisher_;
+
+    /** True if internal state has been changed since previous publish. @see setInternal */
+    bool hasUnpublishedChanges_;
 };
 
-template <typename DataType>
-DataModel<DataType>::DataModel()
- : data_{}
+template <typename DataType, typename Less>
+DataModel<DataType, Less>::DataModel() :
+	data_{},
+	publisher_{},
+	hasUnpublishedChanges_{false}
 {
 }
 
-template <typename DataType>
-DataModel<DataType>::DataModel(const DataType& data)
-  : data_(data)
+template <typename DataType, typename Less>
+DataModel<DataType, Less>::DataModel(const DataType& data) :
+	data_(data),
+	publisher_{},
+	hasUnpublishedChanges_{false}
 {
 }
 
-template <typename DataType>
-DataModel<DataType>::DataModel(DataType&& data)
-  : data_(data)
+template <typename DataType, typename Less>
+DataModel<DataType, Less>::DataModel(DataType&& data) :
+	data_{std::forward<DataType>(data)},
+	publisher_{},
+	hasUnpublishedChanges_{false}
 {
 }
 
-template <typename DataType>
-DataModel<DataType>::~DataModel()
+template <typename DataType, typename Less>
+DataModel<DataType, Less>::~DataModel()
 {
 }
 
-template <typename DataType>
-void DataModel<DataType>::set(const DataType& data)
+template <typename DataType, typename Less>
+void DataModel<DataType, Less>::set(const DataType& data)
 {
-    if (data_ != data)
+	setInternal(data);
+	publishPendingChanges();
+}
+
+template <typename DataType, typename Less>
+const DataType& DataModel<DataType, Less>::get() const
+{
+    return data_;
+}
+
+template <typename DataType, typename Less>
+Publisher<DataType>& DataModel<DataType, Less>::publisher()
+{
+    return publisher_;
+}
+
+template <typename DataType, typename Less>
+void DataModel<DataType, Less>::setInternal(const DataType& data)
+{
+	const Less less{};
+	const bool differ = less(data_, data) || less(data, data_);
+
+    if (differ)
     {
         data_ = data;
-        Publisher<DataType>::notifySubscribers(data_);
+        hasUnpublishedChanges_ = true;
     }
 }
 
-template <typename DataType>
-const DataType& DataModel<DataType>::get() const
+template <typename DataType, typename Less>
+void DataModel<DataType, Less>::publishPendingChanges()
 {
-    return data_;
+	if (hasUnpublishedChanges_)
+	{
+		hasUnpublishedChanges_ = false;
+		publisher_.notifySubscribers(data_);
+	}
 }
 
 }  // namespace Data
