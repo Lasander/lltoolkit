@@ -24,6 +24,8 @@ TEST(TypeHelpersTest, tupleUniqueness)
     std::tuple<float, int> myTuple(1.0, 2);
     static_assert(!has_duplicate<decltype(myTuple)>::value, "Tuple is not unique");
 
-    std::tuple<int, float, int> myTuple(1, 1.0, 2);
+    std::tuple<int, float, int> myTuple2(1, 1.0, 2);
     //static_assert(has_duplicate<decltype(myTuple)>::value, "Tuple is unique"); // fails to compile
 }
+
+} // Common

@@ -23,6 +23,14 @@ set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 
+# Common
+set(commonTestSources 
+	common/TypeHelpers.hpp
+	common/unittest/LogHelpers.hpp
+	common/unittest/Test_TypeHelpers.cpp
+)
+cxx_test(commonTests "${commonTestSources}" gtest_main)
+
 # Data
 protobuf_generate_cpp(DATA_PROTO_SRCS DATA_PROTO_HDRS data/unittest/Test.proto)
 set(dataTestSources
@@ -44,14 +52,12 @@ set(dataTestSources
 	data/unittest/Test_DataModel.cpp
 	data/unittest/Test_Configuration.cpp
 	${DATA_PROTO_SRCS} ${DATA_PROTO_HDRS}
-	#data/unittest/Test.pb.h data/unittest/Test.pb.cc
 )
-cxx_test(dataTests "${dataTestSources}" gtest_main)
-target_link_libraries(dataTests ${PROTOBUF_LIBRARIES})
-
+cxx_test(dataTests "${dataTestSources}" gtest_main ${PROTOBUF_LIBRARIES})
 
 # Logic
 set(logicTestSources 
+	logic/StateMachine.hpp
 	logic/unittest/Test_StateMachine.cpp
 )
 cxx_test(logicTests "${logicTestSources}" gtest_main)
