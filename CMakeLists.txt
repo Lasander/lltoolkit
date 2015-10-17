@@ -43,6 +43,8 @@ set(dataTestSources
     data/DataModel.hpp
     data/Publisher.hpp
     data/SerializableIf.hpp
+    data/ConfigurationReadIf.hpp
+    data/ConfigurationWriteIf.hpp
     data/ConfigurationIf.hpp
     data/Configuration.hpp
     data/Configuration.cpp

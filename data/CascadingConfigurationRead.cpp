@@ -3,9 +3,9 @@
 namespace Data {
 
 CascadingConfigurationRead::CascadingConfigurationRead(
-    const ConfigurationReadIf& wrappedConfiguration,
+    const ConfigurationReadIf& configuration,
     const ConfigurationReadIf& parentConfiguration) :
-    wrappedConfiguration_(wrappedConfiguration),
+    configuration_(configuration),
     parentConfiguration_(parentConfiguration)
 {
 }
@@ -16,9 +16,9 @@ CascadingConfigurationRead::~CascadingConfigurationRead()
 
 bool CascadingConfigurationRead::load(const std::string& key, SerializableIf& item) const
 {
-    if (wrappedConfiguration_.hasItem(key))
+    if (configuration_.hasItem(key))
     {
-        return wrappedConfiguration_.load(key, item);
+        return configuration_.load(key, item);
     }
 
     return parentConfiguration_.load(key, item);
@@ -26,7 +26,7 @@ bool CascadingConfigurationRead::load(const std::string& key, SerializableIf& it
 
 bool CascadingConfigurationRead::hasItem(const std::string& key) const
 {
-    return wrappedConfiguration_.hasItem(key) || parentConfiguration_.hasItem(key);
+    return configuration_.hasItem(key) || parentConfiguration_.hasItem(key);
 }
 
 } // Data
