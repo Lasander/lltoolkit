@@ -10,7 +10,7 @@
 
 #include <map>
 #include <functional>
-#include <cstdio>
+#include <iostream>
 
 namespace Data {
 
@@ -189,7 +189,7 @@ bool Publisher<DataType>::addSubscriber(void* object, const NotificationFunction
 {
     if (!subscribers_.emplace(object, notifyFunction).second)
     {
-        std::fprintf(stderr, "Failed to add subscriber: duplicate\n");
+        std::cerr << "Failed to add subscriber: duplicate" << std::endl;
         return false;
     }
     return true;
@@ -200,7 +200,7 @@ bool Publisher<DataType>::removeSubscriber(void* object)
 {
     if (subscribers_.erase(object) < 1)
     {
-        std::fprintf(stderr, "Failed to remove subscriber: non-existent\n");
+    	std::cerr << "Failed to remove subscriber: non-existent" << std::endl;
         return false;
     }
     return true;

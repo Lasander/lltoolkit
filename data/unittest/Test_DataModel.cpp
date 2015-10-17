@@ -1,4 +1,5 @@
 #include "../DataModel.hpp"
+#include "../../Common/unittest/LogHelpers.hpp"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
@@ -20,8 +21,6 @@ public:
     MOCK_METHOD0_T(notifyEmpty, void());
 };
 
-//Subscriber<int> freeFunctionSubscriberG;
-
 template <class T>
 class DataModelTest : public testing::Test
 {
@@ -39,6 +38,7 @@ protected:
 		currentSubscriber = nullptr;
 	}
 
+	Common::ExpectNoErrorLogs noErrors;
 	DataModel<T> data;
     Publisher<T>& pub;
     StrictMock<Subscriber<T>> sub;
@@ -181,20 +181,19 @@ TEST_F(IntDataModelTest, publishOnlyWhenRequested)
 TEST_F(IntDataModelTest, doubleSubscribe)
 {
     EXPECT_TRUE(pub.subscribe(sub, &notifyFuncEmpty<int>));
-    EXPECT_FALSE(pub.subscribe(sub, &notifyFuncValue<int>));
+    {
+    	Common::ExpectErrorLog error;
+        EXPECT_FALSE(pub.subscribe(sub, &notifyFuncValue<int>));
+    }
 
     EXPECT_CALL(sub, notifyEmpty());
     data.set(55);
 
     EXPECT_TRUE(pub.unsubscribe(sub));
-    EXPECT_FALSE(pub.unsubscribe(sub));
+    {
+    	Common::ExpectErrorLog error;
+    	EXPECT_FALSE(pub.unsubscribe(sub));
+    }
 }
 
 } // Data
-
-//int main(int argc, char **argv)
-//{
-//    freopen("/dev/null", "w", stderr);
-//    ::testing::InitGoogleTest(&argc, argv);
-//    return RUN_ALL_TESTS();
-//}
