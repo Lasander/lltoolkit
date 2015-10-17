@@ -136,7 +136,7 @@ TEST(CascadingConfiguration, hasItem)
     EXPECT_TRUE(cascade.hasItem("number2"));
 }
 
-TEST(CascadingConfiguration, saveAndLoad)
+TEST(CascadingConfiguration, saveAndLoadNumber)
 {
 	InSequence sequence;
 
