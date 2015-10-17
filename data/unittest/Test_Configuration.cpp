@@ -10,6 +10,13 @@
 using namespace testing;
 
 namespace Data {
+
+/** Comparison operation for Number type */
+bool operator<(const Number& x, const Number& y)
+{
+    return x.value() < y.value();
+}
+
 namespace {
 
 class MockSerializable : public SerializableIf
@@ -31,33 +38,6 @@ private:
 	MockSerializable(const MockSerializable&) = delete;
 	MockSerializable& operator=(const MockSerializable&) = delete;
 };
-
-//template <template <typename... ImplParams> class ImplType, typename DataType, typename... Params>
-//class SerializableDataModelImpl : public SerializableDataModelIf<DataType>
-//{
-//public:
-//  SerializableDataModelImpl();
-//  virtual ~SerializableDataModelImpl();
-//
-//  /**
-//   * @defgroup SerializableDataModelIf implementation
-//   * @{
-//   */
-//    virtual void set(const DataType& data) override;
-//    virtual const DataType& get() const override;
-//  virtual Publisher<DataType>& publisher() override;
-//
-//    virtual bool serialize(std::ostream& output) const override;
-//    virtual bool deserialize(std::istream& input) override;
-//    virtual void deserializationComplete() override;
-//    /**@}*/
-//
-//private:
-//    SerializableDataModelImpl(const SerializableDataModelImpl&) = delete;
-//    SerializableDataModelImpl& operator=(const SerializableDataModelImpl&) = delete;
-//  ImplType<DataType, Params...> impl_;
-//};
-
 
 template <typename DataType, typename Less = std::less<DataType>>
 class MockProtobufDataModel : public SerializableDataModelIf<DataType>
@@ -100,17 +80,7 @@ private:
     MockProtobufDataModel& operator=(const MockProtobufDataModel&) = delete;
 
     using ImplType = Protobuf::ProtobufDataModel<DataType, Less>;
-
     ImplType impl_;
-};
-
-/** Comparison operation for Number type */
-struct NumberLess
-{
-    bool operator()(const Number& x, const Number& y) const
-    {
-        return x.value() < y.value();
-    }
 };
 
 } // anonymous namespace
@@ -129,7 +99,7 @@ TEST(Configuration, saveAndLoadNumber)
 {
     InSequence sequence;
 
-    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+    using ModelType = NiceMock<MockProtobufDataModel<Number>>;
     ModelType number;
     number.setValue(1523423);
 	
@@ -148,7 +118,7 @@ TEST(CascadingConfiguration, hasItem)
 {
     InSequence sequence;
 
-    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+    using ModelType = NiceMock<MockProtobufDataModel<Number>>;
     ModelType number;
 
     Configuration parent;
@@ -170,7 +140,7 @@ TEST(CascadingConfiguration, saveAndLoad)
 {
 	InSequence sequence;
 
-    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+    using ModelType = NiceMock<MockProtobufDataModel<Number>>;
 	ModelType number;
 
     Configuration parent;
