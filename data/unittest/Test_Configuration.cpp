@@ -1,75 +1,116 @@
 #include "../Configuration.hpp"
 #include "../CascadingConfigurationRead.hpp"
-#include "../DataModel.hpp"
 #include "../SerializableIf.hpp"
+#include "../Protobuf/ProtobufDataModel.hpp"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "Test.pb.h"
+#include "Test.pb.h" // Defines Number
 
 using namespace testing;
 
 namespace Data {
 namespace {
 
-class MockItem : public SerializableIf
+class MockSerializable : public SerializableIf
 {
 public:
-    MockItem()
+    MockSerializable()
     {
     	ON_CALL(*this, serialize(_)).WillByDefault(Return(true));
         ON_CALL(*this, deserialize(_)).WillByDefault(Return(true));
     }
 
-    virtual ~MockItem() {}
+    virtual ~MockSerializable() {}
 
     MOCK_CONST_METHOD1(serialize, bool(std::ostream& output));
     MOCK_METHOD1(deserialize, bool(std::istream& input));
     MOCK_METHOD0(deserializationComplete, void());
     
 private:
-	MockItem(const MockItem&) = delete;
-	MockItem& operator=(const MockItem&) = delete;
+	MockSerializable(const MockSerializable&) = delete;
+	MockSerializable& operator=(const MockSerializable&) = delete;
 };
 
-template <typename DataType>
-class ProtobufItem : public SerializableIf
+//template <template <typename... ImplParams> class ImplType, typename DataType, typename... Params>
+//class SerializableDataModelImpl : public SerializableDataModelIf<DataType>
+//{
+//public:
+//  SerializableDataModelImpl();
+//  virtual ~SerializableDataModelImpl();
+//
+//  /**
+//   * @defgroup SerializableDataModelIf implementation
+//   * @{
+//   */
+//    virtual void set(const DataType& data) override;
+//    virtual const DataType& get() const override;
+//  virtual Publisher<DataType>& publisher() override;
+//
+//    virtual bool serialize(std::ostream& output) const override;
+//    virtual bool deserialize(std::istream& input) override;
+//    virtual void deserializationComplete() override;
+//    /**@}*/
+//
+//private:
+//    SerializableDataModelImpl(const SerializableDataModelImpl&) = delete;
+//    SerializableDataModelImpl& operator=(const SerializableDataModelImpl&) = delete;
+//  ImplType<DataType, Params...> impl_;
+//};
+
+
+template <typename DataType, typename Less = std::less<DataType>>
+class MockProtobufDataModel : public SerializableDataModelIf<DataType>
 {
 public:
-    ProtobufItem(const DataType& data) :
-    	data_(data)
+    MockProtobufDataModel(const DataType& data)
     {
-		ON_CALL(*this, serialize(_)).WillByDefault(Invoke(this, &ProtobufItem<DataType>::serializeImpl));
-    	ON_CALL(*this, deserialize(_)).WillByDefault(Invoke(this, &ProtobufItem<DataType>::deserializeImpl));
-	}
+        impl_.set(data);
 
-    ProtobufItem() : ProtobufItem(DataType{}) {}
+        ON_CALL(*this, set(_)).WillByDefault(Invoke(&impl_, &ImplType::set));
+        ON_CALL(*this, get()).WillByDefault(Invoke(&impl_, &ImplType::get));
+        ON_CALL(*this, publisher()).WillByDefault(Invoke(&impl_, &ImplType::publisher));
+        ON_CALL(*this, deserialize(_)).WillByDefault(Invoke(&impl_, &ImplType::deserialize));
+        ON_CALL(*this, serialize(_)).WillByDefault(Invoke(&impl_, &ImplType::serialize));
+        ON_CALL(*this, deserializationComplete()).WillByDefault(Invoke(&impl_, &ImplType::deserializationComplete));
+    }
 
-    virtual ~ProtobufItem() {}
+    MockProtobufDataModel() : MockProtobufDataModel(DataType{}) {}
+
+    virtual ~MockProtobufDataModel() {}
+
+    MOCK_METHOD1_T(set, void(const DataType&));
+    MOCK_CONST_METHOD0_T(get, const DataType&());
+    MOCK_METHOD0_T(publisher, Publisher<DataType>&());
 
     MOCK_CONST_METHOD1(serialize, bool(std::ostream& output));
     MOCK_METHOD1(deserialize, bool(std::istream& input));
     MOCK_METHOD0(deserializationComplete, void());
-    
-    DataType& item()
-    {
-        return data_;
-    }
-    
-private:
-	ProtobufItem(const ProtobufItem&) = delete;
-	ProtobufItem& operator=(const ProtobufItem&) = delete;
 
-    bool serializeImpl(std::ostream& output) const
+    template <typename ValueType>
+    void setValue(const ValueType& value)
     {
-        return data_.SerializeToOstream(&output);
+        DataType temp;
+        temp.set_value(value);
+        set(temp);
     }
-    bool deserializeImpl(std::istream& input)
+
+private:
+    MockProtobufDataModel(const MockProtobufDataModel&) = delete;
+    MockProtobufDataModel& operator=(const MockProtobufDataModel&) = delete;
+
+    using ImplType = Protobuf::ProtobufDataModel<DataType, Less>;
+
+    ImplType impl_;
+};
+
+/** Comparison operation for Number type */
+struct NumberLess
+{
+    bool operator()(const Number& x, const Number& y) const
     {
-        return data_.ParseFromIstream(&input);
+        return x.value() < y.value();
     }
-    
-    DataType data_;
 };
 
 } // anonymous namespace
@@ -78,45 +119,46 @@ private:
 TEST(Configuration, hasItem)
 {
     Configuration c;
-    NiceMock<MockItem> item;
+    NiceMock<MockSerializable> item;
     c.save("first", item);
     EXPECT_TRUE(c.hasItem("first"));
     EXPECT_TRUE(!c.hasItem("first_"));
 }
 
-TEST(Configuration, saveAndLoad)
+TEST(Configuration, saveAndLoadNumber)
 {
-	InSequence sequence;
+    InSequence sequence;
 
-    Number n;
-    n.set_value(1523423);
-    StrictMock<ProtobufItem<Number>> number(n);
+    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+    ModelType number;
+    number.setValue(1523423);
 	
     Configuration c;
 	EXPECT_CALL(number, serialize(_));
     EXPECT_TRUE(c.save("number", number));
 
-    StrictMock<ProtobufItem<Number>> number2;
-	EXPECT_CALL(number2, deserialize(_));
+    ModelType number2;
+    EXPECT_CALL(number2, deserialize(_));
     EXPECT_TRUE(c.load("number", number2));
 
-    EXPECT_EQ(number.item().value(), number2.item().value());
+    EXPECT_EQ(number.get().value(), number2.get().value());
 }
 
 TEST(CascadingConfiguration, hasItem)
 {
-	InSequence sequence;
+    InSequence sequence;
 
-    NiceMock<ProtobufItem<Number>> number;
+    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+    ModelType number;
 
     Configuration parent;
-    number.item().set_value(10000);
+    number.setValue(10000);
     EXPECT_TRUE(parent.save("number", number));
-    number.item().set_value(20000);
+    number.setValue(20000);
     EXPECT_TRUE(parent.save("number2", number));
 
     Configuration conf;
-    number.item().set_value(20001);
+    number.setValue(20001);
     EXPECT_TRUE(conf.save("number2", number));
 
     CascadingConfigurationRead cascade(conf, parent);
@@ -128,118 +170,22 @@ TEST(CascadingConfiguration, saveAndLoad)
 {
 	InSequence sequence;
 
-    NiceMock<ProtobufItem<Number>> number;
+    using ModelType = NiceMock<MockProtobufDataModel<Number, NumberLess>>;
+	ModelType number;
 
     Configuration parent;
-    number.item().set_value(10000);
+    number.setValue(10000);
     EXPECT_TRUE(parent.save("number", number));
-    number.item().set_value(20000);
+    number.setValue(20000);
     EXPECT_TRUE(parent.save("number2", number));
 
     Configuration conf;
-    number.item().set_value(20001);
+    number.setValue(20001);
     EXPECT_TRUE(conf.save("number2", number));
 
     CascadingConfigurationRead cascade(conf, parent);
 
-    NiceMock<ProtobufItem<Number>> result;
-    EXPECT_TRUE(cascade.load("number", result));
-    EXPECT_EQ(10000, result.item().value());
-
-    EXPECT_TRUE(cascade.load("number2", result));
-    EXPECT_EQ(20001, result.item().value());
-}
-
-namespace {
-
-template <typename DataType, typename Less = std::less<DataType>>
-class DataModelItem :
-	public SerializableIf,
-	private DataModelIf<DataType>
-{
-public:
-    /** Construct DataModel with default data */
-	DataModelItem() {}
-
-    /** Virtual dtor */
-    virtual ~DataModelItem() {}
-
-    virtual void set(const DataType& data) override
-    {
-    	dataModel_.set(data);
-    }
-
-    virtual const DataType& get() const override
-    {
-    	return dataModel_.get();
-    }
-
-	virtual Publisher<DataType>& publisher()  override
-	{
-		return dataModel_.publisher();
-	}
-
-    bool serialize(std::ostream& output) const override
-    {
-        return get().SerializeToOstream(&output);
-    }
-
-    bool deserialize(std::istream& input) override
-    {
-    	DataType deserializedData{};
-    	bool result = deserializedData.ParseFromIstream(&input);
-        if (result)
-        {
-        	dataModel_.setInternal(deserializedData);
-        }
-        return result;
-    }
-
-    virtual void deserializationComplete() override
-    {
-    	dataModel_.publishPendingChanges();
-    }
-
-private:
-    DataModelItem(const DataModelItem&) = delete;
-    DataModelItem& operator=(const DataModelItem&) = delete;
-
-    DataModel<DataType, Less> dataModel_;
-};
-
-struct NumberLess
-{
-	bool operator()(const Number& x, const Number& y) const
-	{
-		return x.value() < y.value();
-	}
-};
-
-} // anonymous namespace
-
-TEST(DataModelItem, saveAndLoad)
-{
-	InSequence sequence;
-
-    NiceMock<DataModelItem<Number, NumberLess>> number;
-
-    Configuration parent;
-    Number temp;
-    temp.set_value(10000);
-    number.set(temp);
-    EXPECT_TRUE(parent.save("number", number));
-    temp.set_value(20000);
-    number.set(temp);
-    EXPECT_TRUE(parent.save("number2", number));
-
-    Configuration conf;
-    temp.set_value(20001);
-    number.set(temp);
-    EXPECT_TRUE(conf.save("number2", number));
-
-    CascadingConfigurationRead cascade(conf, parent);
-
-    NiceMock<DataModelItem<Number, NumberLess>> result;
+    ModelType result;
     EXPECT_TRUE(cascade.load("number", result));
     EXPECT_EQ(10000, result.get().value());
 
