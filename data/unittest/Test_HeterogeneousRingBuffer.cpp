@@ -1,18 +1,18 @@
-#include "../HeterogenousRingBuffer.hpp"
 #include "../../Common/unittest/LogHelpers.hpp"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <thread>
 #include <string>
+#include "../HeterogeneousRingBuffer.hpp"
 
 using namespace testing;
 
 namespace Data {
 
-TEST(HeterogenousRingBuffer, IntRingBuffer)
+TEST(HeterogeneousRingBuffer, IntRingBuffer)
 {
     // size big enough so write won't be blocked, but small enough for buffer overflow
-    HeterogenousRingBuffer<int, 112> queue;
+    HeterogeneousRingBuffer<int, 112> queue;
     EXPECT_TRUE(queue.isEmpty());
 
     queue.enqueue(42);
@@ -30,9 +30,9 @@ TEST(HeterogenousRingBuffer, IntRingBuffer)
     EXPECT_TRUE(queue.isEmpty());
 }
 
-TEST(HeterogenousRingBuffer, IntRingBufferMultipleThreads)
+TEST(HeterogeneousRingBuffer, IntRingBufferMultipleThreads)
 {
-    using Queue = HeterogenousRingBuffer<int, 4*24>;
+    using Queue = HeterogeneousRingBuffer<int, 4*24>;
 
     struct Context
     {
@@ -115,9 +115,9 @@ const T& element_cast(const ElementIf& element)
 
 }  // anonymous namespace
 
-TEST(HeterogenousRingBuffer, ElementRingBuffer)
+TEST(HeterogeneousRingBuffer, ElementRingBuffer)
 {
-    HeterogenousRingBuffer<ElementIf, 256> queue; // size enough so writes won't be blocked
+    HeterogeneousRingBuffer<ElementIf, 256> queue; // size enough so writes won't be blocked
     EXPECT_TRUE(queue.isEmpty());
 
     for (int i = 0; i < 1000; ++i)

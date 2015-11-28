@@ -1,5 +1,5 @@
-#ifndef DATA_HETEROGENOUSRINGBUFFER_HPP_
-#define DATA_HETEROGENOUSRINGBUFFER_HPP_
+#ifndef DATA_HETEROGENEOUSRINGBUFFER_HPP_
+#define DATA_HETEROGENEOUSRINGBUFFER_HPP_
 
 #include "../common/Semaphore.hpp"
 #include <assert.h>
@@ -18,10 +18,10 @@ namespace Data {
  * Note that there's overhead for each element in the buffer.
  */
 template <typename T, size_t BYTES>
-class HeterogenousRingBuffer
+class HeterogeneousRingBuffer
 {
 public:
-    HeterogenousRingBuffer();
+    HeterogeneousRingBuffer();
 
     /**
      * Push new element of type @p U to the buffer.
@@ -102,7 +102,7 @@ private:
 };
 
 template <typename T, size_t BYTES>
-HeterogenousRingBuffer<T, BYTES>::HeterogenousRingBuffer() :
+HeterogeneousRingBuffer<T, BYTES>::HeterogeneousRingBuffer() :
     buffer_(),
     begin_(buffer_),
     end_(buffer_ + BYTES),
@@ -116,7 +116,7 @@ HeterogenousRingBuffer<T, BYTES>::HeterogenousRingBuffer() :
 
 template <typename T, size_t BYTES>
 template <typename U>
-void HeterogenousRingBuffer<T, BYTES>::enqueue(const U& element)
+void HeterogeneousRingBuffer<T, BYTES>::enqueue(const U& element)
 {
     const size_t envelopeSize = calculateEnvelopeSize(element);
     const size_t potentialSpaceAtBack = getPotentialFreeSpaceAtBack();
@@ -142,13 +142,13 @@ void HeterogenousRingBuffer<T, BYTES>::enqueue(const U& element)
 }
 
 template <typename T, size_t BYTES>
-bool HeterogenousRingBuffer<T, BYTES>::isEmpty() const
+bool HeterogeneousRingBuffer<T, BYTES>::isEmpty() const
 {
     return queuedMessages.getCount() == 0;
 }
 
 template <typename T, size_t BYTES>
-const T& HeterogenousRingBuffer<T, BYTES>::dequeue()
+const T& HeterogeneousRingBuffer<T, BYTES>::dequeue()
 {
     // If there's a previous message, release it
     if (hasPreviousMessage)
@@ -180,42 +180,42 @@ const T& HeterogenousRingBuffer<T, BYTES>::dequeue()
 }
 
 template <typename T, size_t BYTES>
-void HeterogenousRingBuffer<T, BYTES>::releaseSpace(size_t bytes)
+void HeterogeneousRingBuffer<T, BYTES>::releaseSpace(size_t bytes)
 {
     freeSpace.notify(bytes);
 }
 template <typename T, size_t BYTES>
-void HeterogenousRingBuffer<T, BYTES>::waitForSpace(size_t bytes)
+void HeterogeneousRingBuffer<T, BYTES>::waitForSpace(size_t bytes)
 {
     freeSpace.wait(bytes);
 }
 template <typename T, size_t BYTES>
-void HeterogenousRingBuffer<T, BYTES>::notifyNewMessage()
+void HeterogeneousRingBuffer<T, BYTES>::notifyNewMessage()
 {
     queuedMessages.notify();
 }
 template <typename T, size_t BYTES>
-void HeterogenousRingBuffer<T, BYTES>::waitForMessage()
+void HeterogeneousRingBuffer<T, BYTES>::waitForMessage()
 {
     queuedMessages.wait();
 }
 
 template <typename T, size_t BYTES>
-HeterogenousRingBuffer<T, BYTES>::Envelope::Envelope(byte* next, T* element) :
+HeterogeneousRingBuffer<T, BYTES>::Envelope::Envelope(byte* next, T* element) :
     next_(next),
     element_(element)
 {
 }
 
 template <typename T, size_t BYTES>
-bool HeterogenousRingBuffer<T, BYTES>::Envelope::isNull() const
+bool HeterogeneousRingBuffer<T, BYTES>::Envelope::isNull() const
 {
     return element_ == nullptr;
 }
 
 template <typename T, size_t BYTES>
 template <typename U>
-HeterogenousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* next, const U& element) :
+HeterogeneousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* next, const U& element) :
     Envelope(next, &concreteElement_),
     concreteElement_(element)
 {
@@ -223,7 +223,7 @@ HeterogenousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* next
 
 template <typename T, size_t BYTES>
 template <typename U>
-void HeterogenousRingBuffer<T, BYTES>::insertElement(const U& element)
+void HeterogeneousRingBuffer<T, BYTES>::insertElement(const U& element)
 {
     byte* next = back_ + calculateEnvelopeSize(element);
     ElementEnvelope<U>* newElement = new (back_) ElementEnvelope<U>(next, element);
@@ -231,20 +231,20 @@ void HeterogenousRingBuffer<T, BYTES>::insertElement(const U& element)
 }
 
 template <typename T, size_t BYTES>
-void HeterogenousRingBuffer<T, BYTES>::insertPadding()
+void HeterogeneousRingBuffer<T, BYTES>::insertPadding()
 {
     Envelope* nullElement = new (back_) Envelope(begin_, nullptr);
     back_ = begin_;
 }
 
 template <typename T, size_t BYTES>
-const typename HeterogenousRingBuffer<T, BYTES>::Envelope* HeterogenousRingBuffer<T, BYTES>::readFront()
+const typename HeterogeneousRingBuffer<T, BYTES>::Envelope* HeterogeneousRingBuffer<T, BYTES>::readFront()
 {
     return reinterpret_cast<Envelope*>(front_);
 }
 
 template <typename T, size_t BYTES>
-size_t HeterogenousRingBuffer<T, BYTES>::getPotentialFreeSpaceAtBack() const
+size_t HeterogeneousRingBuffer<T, BYTES>::getPotentialFreeSpaceAtBack() const
 {
     return static_cast<size_t>(end_ - back_);
 }
