@@ -45,39 +45,39 @@ public:
 };
 
 // ErrorRedirect implementation
-ErrorRedirect::ErrorRedirect() :
+inline ErrorRedirect::ErrorRedirect() :
 	originalCerrStreamBuffer_{std::cerr.rdbuf()},
 	interceptedCerr_{}
 {
 	std::cerr.rdbuf(interceptedCerr_.rdbuf());
 }
 
-ErrorRedirect::~ErrorRedirect()
+inline ErrorRedirect::~ErrorRedirect()
 {
 	std::cerr.rdbuf(originalCerrStreamBuffer_);
 }
 
-const std::ostringstream& ErrorRedirect::getErrors() const
+inline const std::ostringstream& ErrorRedirect::getErrors() const
 {
 	return interceptedCerr_;
 }
 
 // ExpectErrorLog implementation
-ExpectErrorLog::ExpectErrorLog() : ErrorRedirect()
+inline ExpectErrorLog::ExpectErrorLog() : ErrorRedirect()
 {
 }
 
-ExpectErrorLog::~ExpectErrorLog()
+inline ExpectErrorLog::~ExpectErrorLog()
 {
 	EXPECT_FALSE(getErrors().str().empty());
 }
 
 // ExpectNoErrorLogs implementation
-ExpectNoErrorLogs::ExpectNoErrorLogs() : ErrorRedirect()
+inline ExpectNoErrorLogs::ExpectNoErrorLogs() : ErrorRedirect()
 {
 }
 
-ExpectNoErrorLogs::~ExpectNoErrorLogs()
+inline ExpectNoErrorLogs::~ExpectNoErrorLogs()
 {
 	if (!getErrors().str().empty())
 	{
