@@ -50,9 +50,13 @@ set(dataTestSources
     data/Configuration.cpp
     data/CascadingConfigurationRead.hpp
     data/CascadingConfigurationRead.cpp
+	data/HeterogenousRingBuffer.hpp
+	data/Queue.hpp
 	data/unittest/Test_Data.cpp
 	data/unittest/Test_DataModel.cpp
 	data/unittest/Test_Configuration.cpp
+	data/unittest/Test_HeterogenousRingBuffer.cpp
+	data/unittest/Test_Queue.cpp
 	${DATA_PROTO_SRCS} ${DATA_PROTO_HDRS}
 )
 cxx_test(dataTests "${dataTestSources}" gtest_main ${PROTOBUF_LIBRARIES})
