@@ -12,7 +12,7 @@ namespace Data {
 TEST(HeterogenousRingBuffer, IntRingBuffer)
 {
     // size big enough so write won't be blocked, but small enough for buffer overflow
-    HeterogenousRingBuffer<int, 3*24 + 20> queue;
+    HeterogenousRingBuffer<int, 112> queue;
     EXPECT_TRUE(queue.isEmpty());
 
     queue.enqueue(42);

@@ -12,6 +12,10 @@ namespace Data {
  *
  * The objects are actually copied to the buffer itself so they need to be
  * copyable.
+ *
+ * Thread-safe for one reader and one writer.
+ *
+ * Note that there's overhead for each element in the buffer.
  */
 template <typename T, size_t BYTES>
 class HeterogenousRingBuffer
@@ -19,11 +23,22 @@ class HeterogenousRingBuffer
 public:
     HeterogenousRingBuffer();
 
+    /**
+     * Push new element of type @p U to the buffer.
+     * Will block waiting for space if there's not enough to push immediately.
+     */
     template <typename U>
     void enqueue(const U& element);
 
+    /** @return True if there are no elements in the buffer */
     bool isEmpty() const;
 
+    /**
+     * Read oldest element from the buffer
+     * Will block if there's no elements in the buffer.
+     *
+     * @return Reference to oldest element. The reference is valid until next call to dequeue.
+     */
     const T& dequeue();
 
 private:
@@ -70,6 +85,20 @@ private:
     const Envelope* readFront();
 
     size_t getPotentialFreeSpaceAtBack() const;
+
+    template <typename U>
+    size_t calculateEnvelopeSize(const U& element)
+    {
+        static const auto maxAlignment = alignof(std::max_align_t);
+        const size_t unalignedSize = sizeof(ElementEnvelope<U>);
+
+        size_t remainder = unalignedSize % maxAlignment;
+        if (remainder == 0)
+            return unalignedSize;
+
+        return unalignedSize + maxAlignment - remainder;
+    }
+
 };
 
 template <typename T, size_t BYTES>
@@ -89,7 +118,7 @@ template <typename T, size_t BYTES>
 template <typename U>
 void HeterogenousRingBuffer<T, BYTES>::enqueue(const U& element)
 {
-    const size_t envelopeSize = sizeof(ElementEnvelope<U>);
+    const size_t envelopeSize = calculateEnvelopeSize(element);
     const size_t potentialSpaceAtBack = getPotentialFreeSpaceAtBack();
     assert(potentialSpaceAtBack >= sizeof(Envelope)); // An null envelope should always fit in the back
 
@@ -196,7 +225,7 @@ template <typename T, size_t BYTES>
 template <typename U>
 void HeterogenousRingBuffer<T, BYTES>::insertElement(const U& element)
 {
-    byte* next = back_ + sizeof(ElementEnvelope<U>);
+    byte* next = back_ + calculateEnvelopeSize(element);
     ElementEnvelope<U>* newElement = new (back_) ElementEnvelope<U>(next, element);
     back_ = next;
 }
