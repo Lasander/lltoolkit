@@ -44,61 +44,72 @@ public:
 private:
     using byte = unsigned char;
 
+    /** Actual buffer and pointers to it */
+    ///@{
     byte buffer_[BYTES];
     byte* begin_;
     byte* end_;
+    byte* writePosition_;
+    ///@}
 
-    byte* front_;
-    bool hasPreviousMessage;
-    byte* back_;
-
-    Common::Semaphore freeSpace;
-    Common::Semaphore queuedMessages;
-
+    /** Counter for free space in the buffer */
+    Common::Semaphore freeSpace_;
     void releaseSpace(size_t bytes);
     void waitForSpace(size_t bytes);
-    void notifyNewMessage();
-    void waitForMessage();
 
+    /** Counter for elements in the queue */
+    Common::Semaphore queuedElements_;
+    void notifyNewElement();
+    void waitForElement();
+
+    /** Wrapper for a queue element. Keeps up a single-linked list of wrappers in the queue. */
     struct Envelope
     {
         Envelope(byte* next, T* element);
-        bool isNull() const;
-
-        byte* next_;
-        T* element_;
+        const Envelope* next_;  ///< Future position of next wrapper
+        T* element_;            ///< Wrapped element
     };
-
-    template <typename U>
-    struct ElementEnvelope : public Envelope
+    /** Template to allow heterogeneous elements */
+    template <typename U> struct ElementEnvelope : public Envelope
     {
         ElementEnvelope(byte* next, const U& element);
-
         U concreteElement_;
     };
 
-    template <typename U>
-    void insertElement(const U& element);
+    /**
+     * The envelope we are currently reading and the methods
+     * to query and modify it.
+     *
+     * Initially there's no current envelope. After first read
+     * it is initialized and there after is will always point to
+     * the current element. While the reading blocks waiting for a
+     * new element the envelope is undefined.
+     *
+     * @see dequeue
+     */
+    ///@{
+    const Envelope* currentEnvelope;
 
-    void insertPadding();
+    bool hasCurrentEnvelope() const;
+    bool isCurrentEnvelopePadding() const;
+    void initializeCurrentEnvelope();
+    void releaseCurrentEnvelope();
+    size_t calculateCurrentEnvelopeSize() const;
+    const T& currentEnvelopedElement() const;
+    ///@}
 
-    const Envelope* readFront();
-
+    /**
+     * Methods for writing new elements and determining a proper
+     * position for them in the buffer.
+     *
+     * @see enqueue
+     */
+    ///@{
     size_t getPotentialFreeSpaceAtBack() const;
-
-    template <typename U>
-    size_t calculateEnvelopeSize(const U& element)
-    {
-        static const auto maxAlignment = alignof(std::max_align_t);
-        const size_t unalignedSize = sizeof(ElementEnvelope<U>);
-
-        size_t remainder = unalignedSize % maxAlignment;
-        if (remainder == 0)
-            return unalignedSize;
-
-        return unalignedSize + maxAlignment - remainder;
-    }
-
+    void insertPadding();
+    template <typename U> void insertElement(const U& element);
+    template <typename U> size_t calculateEnvelopeSize(const U& element);
+    ///@}
 };
 
 template <typename T, size_t BYTES>
@@ -106,11 +117,10 @@ HeterogeneousRingBuffer<T, BYTES>::HeterogeneousRingBuffer() :
     buffer_(),
     begin_(buffer_),
     end_(buffer_ + BYTES),
-    front_(buffer_),
-    hasPreviousMessage(false),
-    back_(buffer_),
-    freeSpace(BYTES),
-    queuedMessages(0)
+    writePosition_(buffer_),
+    freeSpace_(BYTES),
+    queuedElements_(0),
+    currentEnvelope(nullptr)
 {
 }
 
@@ -138,79 +148,64 @@ void HeterogeneousRingBuffer<T, BYTES>::enqueue(const U& element)
         insertElement(element);
     }
 
-    notifyNewMessage();
+    notifyNewElement();
 }
 
 template <typename T, size_t BYTES>
 bool HeterogeneousRingBuffer<T, BYTES>::isEmpty() const
 {
-    return queuedMessages.getCount() == 0;
+    return queuedElements_.getCount() == 0;
 }
 
 template <typename T, size_t BYTES>
 const T& HeterogeneousRingBuffer<T, BYTES>::dequeue()
 {
-    // If there's a previous message, release it
-    if (hasPreviousMessage)
+    if (hasCurrentEnvelope())
     {
-        const byte* previousFront = front_;
-
-        const Envelope* envelope = readFront();
-        front_ = envelope->next_;
-        releaseSpace(front_ - previousFront);
-
-        hasPreviousMessage = false;
+        releaseCurrentEnvelope();
     }
 
-    waitForMessage();
+    waitForElement();
 
-    // Skip any padding
-    const Envelope* envelope = readFront();
-    while (envelope->isNull())
+    if (!hasCurrentEnvelope())
     {
-        releaseSpace(end_ - front_);
-        front_ = envelope->next_;
-        assert(front_ == begin_);
-
-        envelope = readFront();
+        initializeCurrentEnvelope();
     }
 
-    hasPreviousMessage = true;
-    return *envelope->element_;
+    while (isCurrentEnvelopePadding())
+    {
+        releaseCurrentEnvelope();
+    }
+
+    return currentEnvelopedElement();
 }
 
 template <typename T, size_t BYTES>
 void HeterogeneousRingBuffer<T, BYTES>::releaseSpace(size_t bytes)
 {
-    freeSpace.notify(bytes);
+    freeSpace_.notify(bytes);
 }
 template <typename T, size_t BYTES>
 void HeterogeneousRingBuffer<T, BYTES>::waitForSpace(size_t bytes)
 {
-    freeSpace.wait(bytes);
+    freeSpace_.wait(bytes);
 }
 template <typename T, size_t BYTES>
-void HeterogeneousRingBuffer<T, BYTES>::notifyNewMessage()
+void HeterogeneousRingBuffer<T, BYTES>::notifyNewElement()
 {
-    queuedMessages.notify();
+    queuedElements_.notify();
 }
 template <typename T, size_t BYTES>
-void HeterogeneousRingBuffer<T, BYTES>::waitForMessage()
+void HeterogeneousRingBuffer<T, BYTES>::waitForElement()
 {
-    queuedMessages.wait();
+    queuedElements_.wait();
 }
 
 template <typename T, size_t BYTES>
 HeterogeneousRingBuffer<T, BYTES>::Envelope::Envelope(byte* next, T* element) :
-    next_(next),
+    next_(reinterpret_cast<Envelope*>(next)),
     element_(element)
 {
-}
-
-template <typename T, size_t BYTES>
-bool HeterogeneousRingBuffer<T, BYTES>::Envelope::isNull() const
-{
-    return element_ == nullptr;
 }
 
 template <typename T, size_t BYTES>
@@ -222,31 +217,80 @@ HeterogeneousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* nex
 }
 
 template <typename T, size_t BYTES>
-template <typename U>
-void HeterogeneousRingBuffer<T, BYTES>::insertElement(const U& element)
+bool HeterogeneousRingBuffer<T, BYTES>::hasCurrentEnvelope() const
 {
-    byte* next = back_ + calculateEnvelopeSize(element);
-    ElementEnvelope<U>* newElement = new (back_) ElementEnvelope<U>(next, element);
-    back_ = next;
+    return currentEnvelope != nullptr;
 }
 
 template <typename T, size_t BYTES>
-void HeterogeneousRingBuffer<T, BYTES>::insertPadding()
+bool HeterogeneousRingBuffer<T, BYTES>::isCurrentEnvelopePadding() const
 {
-    Envelope* nullElement = new (back_) Envelope(begin_, nullptr);
-    back_ = begin_;
+    return currentEnvelope->element_ == nullptr;
 }
 
 template <typename T, size_t BYTES>
-const typename HeterogeneousRingBuffer<T, BYTES>::Envelope* HeterogeneousRingBuffer<T, BYTES>::readFront()
+void HeterogeneousRingBuffer<T, BYTES>::initializeCurrentEnvelope()
 {
-    return reinterpret_cast<Envelope*>(front_);
+    currentEnvelope = reinterpret_cast<Envelope*>(begin_);
+}
+
+template <typename T, size_t BYTES>
+void HeterogeneousRingBuffer<T, BYTES>::releaseCurrentEnvelope()
+{
+    const size_t size = calculateCurrentEnvelopeSize();
+    currentEnvelope = currentEnvelope->next_;
+    releaseSpace(size);
+}
+
+template <typename T, size_t BYTES>
+size_t HeterogeneousRingBuffer<T, BYTES>::calculateCurrentEnvelopeSize() const
+{
+    const byte* self = reinterpret_cast<const byte*>(currentEnvelope);
+    const byte* next = reinterpret_cast<const byte*>(currentEnvelope->next_);
+
+    return next > self ? next - self : end_ - self;
+}
+
+template <typename T, size_t BYTES>
+const T& HeterogeneousRingBuffer<T, BYTES>::currentEnvelopedElement() const
+{
+    return *currentEnvelope->element_;
 }
 
 template <typename T, size_t BYTES>
 size_t HeterogeneousRingBuffer<T, BYTES>::getPotentialFreeSpaceAtBack() const
 {
-    return static_cast<size_t>(end_ - back_);
+    return static_cast<size_t>(end_ - writePosition_);
+}
+
+template <typename T, size_t BYTES>
+void HeterogeneousRingBuffer<T, BYTES>::insertPadding()
+{
+    Envelope* nullElement = new (writePosition_) Envelope(begin_, nullptr);
+    writePosition_ = begin_;
+}
+
+template <typename T, size_t BYTES>
+template <typename U>
+void HeterogeneousRingBuffer<T, BYTES>::insertElement(const U& element)
+{
+    byte* next = writePosition_ + calculateEnvelopeSize(element);
+    ElementEnvelope<U>* newElement = new (writePosition_) ElementEnvelope<U>(next, element);
+    writePosition_ = next;
+}
+
+template <typename T, size_t BYTES>
+template <typename U>
+size_t HeterogeneousRingBuffer<T, BYTES>::calculateEnvelopeSize(const U& element)
+{
+    static const auto maxAlignment = alignof(std::max_align_t);
+    const size_t unalignedSize = sizeof(ElementEnvelope<U>);
+
+    size_t remainder = unalignedSize % maxAlignment;
+    if (remainder == 0)
+        return unalignedSize;
+
+    return unalignedSize + maxAlignment - remainder;
 }
 
 } // Data
