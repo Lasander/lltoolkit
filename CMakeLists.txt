@@ -50,11 +50,13 @@ set(dataTestSources
     data/Configuration.cpp
     data/CascadingConfigurationRead.hpp
     data/CascadingConfigurationRead.cpp
+	data/HeterogeneousQueue.hpp
 	data/HeterogeneousRingBuffer.hpp
 	data/Queue.hpp
 	data/unittest/Test_Data.cpp
 	data/unittest/Test_DataModel.cpp
 	data/unittest/Test_Configuration.cpp
+	data/unittest/Test_HeterogeneousQueue.cpp
 	data/unittest/Test_HeterogeneousRingBuffer.cpp
 	data/unittest/Test_Queue.cpp
 	${DATA_PROTO_SRCS} ${DATA_PROTO_HDRS}
