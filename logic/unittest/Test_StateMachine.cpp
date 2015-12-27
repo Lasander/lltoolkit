@@ -11,7 +11,6 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <typeindex>
 
 namespace Logic {
 namespace {
@@ -19,14 +18,14 @@ namespace {
 class Actions
 {
 public:
-    virtual void print(const std::string &str) { std::cout << str << std::endl; }
-    virtual void unhandledEvent() { print("unhandled event"); }
+    void print(const std::string &str) { std::cout << str << std::endl; }
+    void unhandledEvent() { print("unhandled event"); }
 };
 
 struct LevelState : public StateAbs<LevelState, Actions> {
     using StateAbs::StateAbs;
-    virtual void bringDown() { a.unhandledEvent(); }
-    virtual void liftUp(int) { a.unhandledEvent(); }
+    virtual void bringDown() { unhandledEvent("bringDown"); }
+    virtual void liftUp(int) { unhandledEvent("liftUp"); }
 };
 
 struct Low;
@@ -43,21 +42,7 @@ struct Low : public LevelState {
     using LevelState::LevelState;
     void entry() { a.print("entering Low"); }
     void liftUp(int) { changeTo<High>(); }
-    void bringDown() { a.print("already Low"); }
     void exit() { a.print("leaving Low"); }
-};
-
-
-class Machine : private LevelState::Machine
-{
-public:
-    Machine(Actions& actions) : LevelState::Machine(actions)
-    {
-        enter<High>();
-    }
-
-    void liftUp(int i) { state()->liftUp(i); }
-    void bringDown() { state()->bringDown(); }
 };
 
 } // anonymous namespace
@@ -65,12 +50,13 @@ public:
 TEST(StateMachineTest, machine2)
 {
     Actions a;
-    Machine m(a);
+    LevelState::Machine m(a);
+    m.enter<High>();
 
-    m.bringDown();
-    m.bringDown();
-    m.liftUp(1);
-    m.liftUp(2);
+    m->bringDown();
+    m->bringDown(); // unhandled event
+    m->liftUp(1);
+    m->liftUp(2);
 }
 
 
