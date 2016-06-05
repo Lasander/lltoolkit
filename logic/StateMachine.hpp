@@ -74,7 +74,7 @@ public:
     EventWrapper operator->();
 
     /** @return The current state */
-    State* const& state() const;
+    const State* state() const;
 
 private:
     /** Prevent copy, move and assignment */
@@ -218,7 +218,7 @@ typename StateMachine<State, Actions>::EventWrapper StateMachine<State, Actions>
 }
 
 template <typename State, typename Actions>
-State* const& StateMachine<State, Actions>::state() const
+const State* StateMachine<State, Actions>::state() const
 {
     return state_;
 }
