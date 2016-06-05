@@ -21,6 +21,7 @@ template <typename T, size_t BYTES>
 class HeterogeneousRingBuffer
 {
 public:
+    /** Construct a HeterogeneousRingBuffer */
     HeterogeneousRingBuffer();
 
     /**

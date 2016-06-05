@@ -23,11 +23,17 @@ template <typename T>
 class HeterogeneousQueue
 {
 public:
+    /**
+     * Construct a queue with initial buffer size of @initialSizeInBytes.
+     *
+     * A new buffer doubling the previous size is allocated whenever
+     * the buffer runs out.
+     */
     HeterogeneousQueue(size_t initialSizeInBytes);
 
     /**
      * Push new element of type @p U to the buffer.
-     * Will block waiting for space if there's not enough to push immediately.
+     * Will allocate more space if there's not enough to push immediately.
      */
     template <typename U>
     void enqueue(const U& element);
