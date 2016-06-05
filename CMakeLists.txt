@@ -43,6 +43,7 @@ set(dataTestSources
     data/DataModel.hpp
     data/Publisher.hpp
     data/SerializableIf.hpp
+	data/ConcreteQueue.hpp
     data/ConfigurationReadIf.hpp
     data/ConfigurationWriteIf.hpp
     data/ConfigurationIf.hpp
@@ -52,13 +53,12 @@ set(dataTestSources
     data/CascadingConfigurationRead.cpp
 	data/HeterogeneousQueue.hpp
 	data/HeterogeneousRingBuffer.hpp
-	data/Queue.hpp
+	data/unittest/Test_ConcreteQueue.cpp
 	data/unittest/Test_Data.cpp
 	data/unittest/Test_DataModel.cpp
 	data/unittest/Test_Configuration.cpp
 	data/unittest/Test_HeterogeneousQueue.cpp
 	data/unittest/Test_HeterogeneousRingBuffer.cpp
-	data/unittest/Test_Queue.cpp
 	${DATA_PROTO_SRCS} ${DATA_PROTO_HDRS}
 )
 cxx_test(dataTests "${dataTestSources}" gtest_main ${PROTOBUF_LIBRARIES})

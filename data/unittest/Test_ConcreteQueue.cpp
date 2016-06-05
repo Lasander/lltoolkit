@@ -2,7 +2,8 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <thread>
-#include "../Queue.hpp"
+
+#include "../ConcreteQueue.hpp"
 
 using namespace testing;
 
@@ -11,9 +12,9 @@ namespace {
 
 } // anonymous namespace
 
-TEST(Queue, BasicIntQueue)
+TEST(ConcreteQueue, BasicIntQueue)
 {
-    Queue<int> queue;
+    ConcreteQueue<int> queue;
     EXPECT_TRUE(queue.isEmpty());
 
     queue.enqueue(42);
@@ -27,11 +28,11 @@ TEST(Queue, BasicIntQueue)
     EXPECT_TRUE(queue.isEmpty());
 }
 
-TEST(Queue, BasicIntQueueMultipleThreads)
+TEST(ConcreteQueue, BasicIntQueueMultipleThreads)
 {
     struct Context
     {
-        static void produce(Queue<int>& queue, size_t count)
+        static void produce(ConcreteQueue<int>& queue, size_t count)
         {
             int lastSent = 0;
             for (size_t c = 0; c < count; ++c)
@@ -40,7 +41,7 @@ TEST(Queue, BasicIntQueueMultipleThreads)
             }
         }
 
-        static void consume(Queue<int>& queue, size_t count)
+        static void consume(ConcreteQueue<int>& queue, size_t count)
         {
             int lastReceived = 0;
             for (size_t c = 0; c < count; ++c)
@@ -50,7 +51,7 @@ TEST(Queue, BasicIntQueueMultipleThreads)
         }
     };
 
-    Queue<int> queue;
+    ConcreteQueue<int> queue;
 
     std::thread consumer(&Context::consume, std::ref(queue), 10000);
     std::thread producer(&Context::produce, std::ref(queue), 10000);
