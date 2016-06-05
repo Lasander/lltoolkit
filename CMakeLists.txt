@@ -3,6 +3,8 @@ set(CMAKE_ECLIPSE_VERSION "4.4" CACHE INTERNAL "Eclipse version" FORCE)
 
 project (LLToolkit)
 
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 set (USE_GMOCK 1)
 include("cmake/gtest.cmake")
 
@@ -70,3 +72,4 @@ set(logicTestSources
 )
 cxx_test(logicTests "${logicTestSources}" gtest_main)
 
+add_subdirectory(doc)
