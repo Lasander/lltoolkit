@@ -221,7 +221,7 @@ void HeterogeneousQueue<T>::enqueue(const U& element)
         Block* newWriteBlock = new Block(writeBlock_->sizeInBytes_ * 2);
 
         writeBlock_->waitForSpace(sizeof(Envelope));
-        Envelope* nullElement = new (writeBlock_->writePosition_) Envelope(newWriteBlock->begin_, nullptr, sizeof(Envelope), writeBlock_);
+        (void)new (writeBlock_->writePosition_) Envelope(newWriteBlock->begin_, nullptr, sizeof(Envelope), writeBlock_);
 
         decayingBlocks_.push_back(writeBlock_);
         writeBlock_ = newWriteBlock;
@@ -309,7 +309,7 @@ void HeterogeneousQueue<T>::insertElement(const U& element, size_t envelopeSize)
 
     //std::cout << "W: Inserting element to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_ << std::endl;
 
-    ElementEnvelope<U>* newElement = new (writeBlock_->writePosition_) ElementEnvelope<U>(next, element, envelopeSize, writeBlock_);
+    (void)new (writeBlock_->writePosition_) ElementEnvelope<U>(next, element, envelopeSize, writeBlock_);
     writeBlock_->writePosition_ = next;
 }
 
@@ -318,7 +318,7 @@ void HeterogeneousQueue<T>::insertPadding(size_t paddingSize)
 {
     //std::cout << "W: Inserting padding to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_ << std::endl;
 
-    Envelope* nullElement = new (writeBlock_->writePosition_) Envelope(writeBlock_->begin_, nullptr, paddingSize, writeBlock_);
+    (void)new (writeBlock_->writePosition_) Envelope(writeBlock_->begin_, nullptr, paddingSize, writeBlock_);
     writeBlock_->writePosition_ = writeBlock_->begin_;
 }
 

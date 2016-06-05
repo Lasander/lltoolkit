@@ -267,7 +267,7 @@ size_t HeterogeneousRingBuffer<T, BYTES>::getPotentialFreeSpaceAtBack() const
 template <typename T, size_t BYTES>
 void HeterogeneousRingBuffer<T, BYTES>::insertPadding()
 {
-    Envelope* nullElement = new (writePosition_) Envelope(begin_, nullptr);
+    (void)new (writePosition_) Envelope(begin_, nullptr);
     writePosition_ = begin_;
 }
 
@@ -276,7 +276,7 @@ template <typename U>
 void HeterogeneousRingBuffer<T, BYTES>::insertElement(const U& element)
 {
     byte* next = writePosition_ + calculateEnvelopeSize(element);
-    ElementEnvelope<U>* newElement = new (writePosition_) ElementEnvelope<U>(next, element);
+    (void)new (writePosition_) ElementEnvelope<U>(next, element);
     writePosition_ = next;
 }
 
