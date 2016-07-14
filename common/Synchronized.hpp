@@ -4,6 +4,42 @@
 
 namespace Common {
 
+/** Synchronized data lock policies. */
+///@{
+
+/** Original data class must implement lock() and unlock() itself */
+class DataLock
+{
+};
+
+/** A new lock is created by Synchronized class */
+template <typename Lock>
+class InternalLock
+{
+public:
+    InternalLock() : lock_() {}
+    void lock() { lock_.lock(); }
+    void unlock() { lock_.unlock(); }
+
+private:
+    Lock lock_;
+};
+
+/** An external lock is provided to Synchronized class */
+template <typename Lock>
+class ExternalLock
+{
+public:
+    ExternalLock(Lock& lock) : lock_(lock) {}
+    void lock() { lock_.lock(); }
+    void unlock() { lock_.unlock(); }
+
+private:
+    Lock& lock_;
+};
+
+///@}
+
 /**
  * A generic synchronization wrapper
  *
@@ -27,19 +63,26 @@ namespace Common {
  *       t->doThis();
  *       t->doThat();
  *   }
+ *
+ * @tparam Data Wrapped data type
+ * @tparam Lock Lock policy
  */
-template <typename Data, typename Lock = std::mutex>
-class Synchronized : private Data
+template <typename Data, typename Lock = InternalLock<std::mutex>>
+class Synchronized : private Data, private Lock
 {
 public:
     /** Constructor template to add a lock parameter to the Data construction */
     template <typename ...Args>
-    Synchronized(Lock& lock, Args... argsP);
+    Synchronized(Lock& lock, Args... args);
+
+    /** Constructor template to construction data and use internal lock */
+    template <typename ...Args>
+    Synchronized(Args... args);
 
     /** Arrow operator to conveniently perform single call transactions */
     auto operator->();
 
-    /** Operator to conveniently perform single call transactions */
+    /** @return Transaction object to perform a series of calls under a single lock/unlock */
     auto makeTransaction();
 
 private:
@@ -67,16 +110,22 @@ private:
 
         Synchronized* obj_;
     };
-
-    Lock& lock_;
 };
 
 
 template <typename Data, typename Lock>
 template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(Lock& lock, Args... argsP)
-  : Data(argsP...),
-    lock_(lock)
+Synchronized<Data, Lock>::Synchronized(Lock& lock, Args... args)
+  : Data(args...),
+    Lock(lock)
+{
+}
+
+template <typename Data, typename Lock>
+template <typename ...Args>
+Synchronized<Data, Lock>::Synchronized(Args... args)
+  : Data(args...),
+    Lock()
 {
 }
 
@@ -96,7 +145,7 @@ template <typename Data, typename Lock>
 Synchronized<Data, Lock>::Transaction::Transaction(Synchronized& obj)
   : obj_(&obj)
 {
-    obj_->lock_.lock();
+    obj_->lock();
 }
 
 template <typename Data, typename Lock>
@@ -111,7 +160,7 @@ Synchronized<Data, Lock>::Transaction::~Transaction()
 {
     if (obj_)
     {
-        obj_->lock_.unlock();
+        obj_->unlock();
     }
 }
 
