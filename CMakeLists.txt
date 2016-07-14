@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set (USE_GMOCK 1)
 include("cmake/gtest.cmake")
 
-set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++ -Wall -Werror")
 
 #add_executable(main main.cpp)
 #target_link_libraries(main nanomsg)
