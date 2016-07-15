@@ -35,7 +35,7 @@ protected:
     void unlock() { lock_.unlock(); };
 
 private:
-    MockLock lock_;
+    testing::NiceMock<MockLock> lock_;
 };
 
 } // anonymous namespace
@@ -72,7 +72,7 @@ TEST(TestSynchronized, testDefaultLockType)
 
 TEST(TestSynchronized, testInternalLockType)
 {
-    Synchronized<MockData, InternalLock<MockLock>> data(66);
+    Synchronized<MockData, InternalLock<testing::NiceMock<MockLock>>> data(66);
 
     EXPECT_EQ(66, data->getData());
     data->setData(88);
