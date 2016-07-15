@@ -8,31 +8,35 @@ namespace Common {
 ///@{
 
 /** Original data class must implement lock() and unlock() itself */
+template <typename Data>
 class DataLock
 {
+public:
+    void lock(Data* data) { data->lock(); }
+    void unlock(Data* data) { data->unlock(); }
 };
 
 /** A new lock is created by Synchronized class */
-template <typename Lock>
+template <typename Lock, typename Data = void>
 class InternalLock
 {
 public:
     InternalLock() : lock_() {}
-    void lock() { lock_.lock(); }
-    void unlock() { lock_.unlock(); }
+    void lock(Data*) { lock_.lock(); }
+    void unlock(Data*) { lock_.unlock(); }
 
 private:
     Lock lock_;
 };
 
 /** An external lock is provided to Synchronized class */
-template <typename Lock>
+template <typename Lock, typename Data = void>
 class ExternalLock
 {
 public:
     ExternalLock(Lock& lock) : lock_(lock) {}
-    void lock() { lock_.lock(); }
-    void unlock() { lock_.unlock(); }
+    void lock(Data*) { lock_.lock(); }
+    void unlock(Data*) { lock_.unlock(); }
 
 private:
     Lock& lock_;
@@ -145,7 +149,7 @@ template <typename Data, typename Lock>
 Synchronized<Data, Lock>::Transaction::Transaction(Synchronized& obj)
   : obj_(&obj)
 {
-    obj_->lock();
+    obj_->Lock::lock(obj_);
 }
 
 template <typename Data, typename Lock>
@@ -160,7 +164,7 @@ Synchronized<Data, Lock>::Transaction::~Transaction()
 {
     if (obj_)
     {
-        obj_->unlock();
+        obj_->Lock::unlock(obj_);
     }
 }
 
