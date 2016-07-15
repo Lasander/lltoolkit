@@ -93,9 +93,11 @@ public:
 
     /** Arrow operator to conveniently perform single call transactions */
     auto operator->();
+    auto operator->() const;
 
     /** @return Transaction object to perform a series of calls under a single lock/unlock */
     auto makeTransaction();
+    auto makeTransaction() const;
 
 private:
     /** Transaction to perform multiple operations as an atomic transaction */
@@ -121,6 +123,31 @@ private:
         Transaction& operator=(const Transaction&) = delete;
 
         Synchronized* obj_;
+    };
+
+    /** Transaction to perform multiple operations as an atomic transaction to a const data */
+    class ConstTransaction
+    {
+    public:
+        // Transaction can be moved to allow return by value @see Synchronized::makeTransaction
+        ConstTransaction(ConstTransaction&& other);
+
+        ~ConstTransaction();
+
+        /** Get access to the data and its original operations */
+        const Data* operator->();
+
+    private:
+        friend class Synchronized;
+
+        // Can be constructed only by class Synchronized
+        ConstTransaction(const Synchronized& obj);
+
+        // No copying
+        ConstTransaction(const ConstTransaction&) = delete;
+        ConstTransaction& operator=(const ConstTransaction&) = delete;
+
+        const Synchronized* obj_;
     };
 };
 
@@ -162,9 +189,21 @@ auto Synchronized<Data, Lock>::operator->()
 }
 
 template <typename Data, typename Lock>
+auto Synchronized<Data, Lock>::operator->() const
+{
+    return makeTransaction();
+}
+
+template <typename Data, typename Lock>
 auto Synchronized<Data, Lock>::makeTransaction()
 {
     return Transaction(*this);
+}
+
+template <typename Data, typename Lock>
+auto Synchronized<Data, Lock>::makeTransaction() const
+{
+    return ConstTransaction(*this);
 }
 
 // Synchronized::Transaction implementation
@@ -193,6 +232,38 @@ Synchronized<Data, Lock>::Transaction::~Transaction()
 
 template <typename Data, typename Lock>
 Data* Synchronized<Data, Lock>::Transaction::operator->()
+{
+    return obj_;
+}
+
+// Synchronized::ConstTransaction implementation
+template <typename Data, typename Lock>
+Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(const Synchronized& obj)
+  : obj_(&obj)
+{
+    Synchronized* nonConstData = const_cast<Synchronized*>(obj_);
+    nonConstData->Lock::lock(nonConstData);
+}
+
+template <typename Data, typename Lock>
+Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(ConstTransaction&& other)
+  : obj_(other.obj_)
+{
+    other.obj_ = nullptr;
+}
+
+template <typename Data, typename Lock>
+Synchronized<Data, Lock>::ConstTransaction::~ConstTransaction()
+{
+    if (obj_)
+    {
+        Synchronized* nonConstData = const_cast<Synchronized*>(obj_);
+        nonConstData->Lock::unlock(nonConstData);
+    }
+}
+
+template <typename Data, typename Lock>
+const Data* Synchronized<Data, Lock>::ConstTransaction::operator->()
 {
     return obj_;
 }

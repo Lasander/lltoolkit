@@ -33,7 +33,7 @@ class MockData
 {
 public:
     void setData(int data) { data_ = data;}
-    int getData() { return data_; };
+    int getData() const { return data_; };
 
 protected:
     MockData(int initialData) : data_(initialData) {}
@@ -143,6 +143,31 @@ TEST(TestSynchronized, testTransaction)
     EXPECT_EQ(55, transaction->getData());
     transaction->setData(99);
     EXPECT_EQ(99, transaction->getData());
+}
+
+TEST(TestSynchronized, testConstTransaction)
+{
+    testing::StrictMock<MockLock> lock;
+    const Synchronized<const MockData, ExternalLock<MockLock>> data(lock, 44);
+
+    testing::InSequence sequence;
+    EXPECT_CALL(lock, lock());
+    EXPECT_CALL(lock, lock());
+    EXPECT_CALL(lock, unlock());
+    EXPECT_CALL(lock, unlock());
+
+    auto transaction = data.makeTransaction();
+    EXPECT_EQ(44, transaction->getData());
+    EXPECT_EQ(44, data->getData());
+}
+
+TEST(TestSynchronized, testConstTransactionWithInternalLock)
+{
+    const Synchronized<const MockData, InternalLock<testing::NiceMock<MockLock>>> data(77);
+
+    auto transaction = data.makeTransaction();
+    EXPECT_EQ(77, transaction->getData());
+    EXPECT_EQ(77, data->getData());
 }
 
 TEST(TestSynchronized, testSingleCallDuringTransaction)
