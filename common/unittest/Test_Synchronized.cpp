@@ -7,8 +7,15 @@ namespace Common {
 
 namespace {
 
-// For printing output in cases the locks are hidden in the implementation and not accessible for the test
 class DummyLock
+{
+public:
+    void lock() {}
+    void unlock() {}
+};
+
+// For printing output in cases the locks are hidden in the implementation and not accessible for the test
+class PrintingLock
 {
 public:
     void lock() { std::cout << "lock" << std::endl; }
@@ -70,8 +77,7 @@ public:
 TEST(TestSynchronized, testSingleCall)
 {
     testing::StrictMock<MockLock> lock;
-    ExternalLock<MockLock> lockPolicy(lock);
-    Synchronized<MockData, ExternalLock<MockLock>> data(lockPolicy, 66);
+    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 66);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -127,8 +133,7 @@ TEST(TestSynchronized, testCustomLockType)
 TEST(TestSynchronized, testTransaction)
 {
     testing::StrictMock<MockLock> lock;
-    ExternalLock<MockLock> lockPolicy(lock);
-    Synchronized<MockData, ExternalLock<MockLock>> data(lockPolicy, 55);
+    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 55);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -143,8 +148,7 @@ TEST(TestSynchronized, testTransaction)
 TEST(TestSynchronized, testSingleCallDuringTransaction)
 {
     testing::StrictMock<MockLock> lock;
-    ExternalLock<MockLock> lockPolicy(lock);
-    Synchronized<MockData, ExternalLock<MockLock>> data(lockPolicy, 55);
+    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 55);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -153,29 +157,17 @@ TEST(TestSynchronized, testSingleCallDuringTransaction)
     EXPECT_CALL(lock, unlock());
 
     auto transaction = data.makeTransaction();
-    EXPECT_EQ(55, transaction->getData());
-    data->setData(99);
+    EXPECT_EQ(55, data->getData());
 }
 
 TEST(TestSynchronized, testCopy)
 {
-    testing::StrictMock<MockLock> lock;
-    ExternalLock<MockLock> lockPolicy(lock);
-    Synchronized<MockData, ExternalLock<MockLock>> data(lockPolicy, 55);
-    Synchronized<MockData, ExternalLock<MockLock>> copy(data);
-
-    testing::InSequence sequence;
-    EXPECT_CALL(lock, lock());
-    EXPECT_CALL(lock, unlock());
-    EXPECT_CALL(lock, lock());
-    EXPECT_CALL(lock, unlock());
-    EXPECT_CALL(lock, lock());
-    EXPECT_CALL(lock, unlock());
+    Synchronized<MockData, InternalLock<DummyLock>> data(55);
+    Synchronized<MockData, InternalLock<DummyLock>> copy(data);
 
     copy->setData(66);
     EXPECT_EQ(66, copy->getData());
     EXPECT_EQ(55, data->getData());
-
 }
 
 } // Common

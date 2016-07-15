@@ -76,12 +76,20 @@ class Synchronized : private Data, private Lock
 {
 public:
     /** Constructor template to add a lock parameter to the Data construction */
-    template <typename ...Args>
-    Synchronized(Lock& lock, Args... args);
+    template <typename LockImpl, typename ...Args>
+    Synchronized(LockImpl& lock, Args... args);
 
     /** Constructor template to construction data and use internal lock */
     template <typename ...Args>
     Synchronized(Args... args);
+
+    /**
+     * Explicit copy constructors. Needed as otherwise above templates will catch a copy attempt.
+     * TODO: Fix by restricting above templates
+     * TODO: If not fixed, need all cv-combinations?
+     */
+    Synchronized(const Synchronized& other);
+    Synchronized(Synchronized& other);
 
     /** Arrow operator to conveniently perform single call transactions */
     auto operator->();
@@ -116,10 +124,10 @@ private:
     };
 };
 
-
+// Synchronized implementation
 template <typename Data, typename Lock>
-template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(Lock& lock, Args... args)
+template <typename LockImpl, typename ...Args>
+Synchronized<Data, Lock>::Synchronized(LockImpl& lock, Args... args)
   : Data(args...),
     Lock(lock)
 {
@@ -130,6 +138,20 @@ template <typename ...Args>
 Synchronized<Data, Lock>::Synchronized(Args... args)
   : Data(args...),
     Lock()
+{
+}
+
+template <typename Data, typename Lock>
+Synchronized<Data, Lock>::Synchronized(const Synchronized& other)
+: Data(other),
+  Lock(other)
+{
+}
+
+template <typename Data, typename Lock>
+Synchronized<Data, Lock>::Synchronized(Synchronized& other)
+  : Data(other),
+    Lock(other)
 {
 }
 
@@ -145,6 +167,7 @@ auto Synchronized<Data, Lock>::makeTransaction()
     return Transaction(*this);
 }
 
+// Synchronized::Transaction implementation
 template <typename Data, typename Lock>
 Synchronized<Data, Lock>::Transaction::Transaction(Synchronized& obj)
   : obj_(&obj)
