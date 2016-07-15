@@ -35,10 +35,13 @@ class ExternalLock
 {
 public:
     ExternalLock(Lock& lock) : lock_(lock) {}
+    ExternalLock(ExternalLock&& other) = default;
+
     void lock(Data*) { lock_.lock(); }
     void unlock(Data*) { lock_.unlock(); }
 
 private:
+    ExternalLock(const ExternalLock& other) = delete;
     Lock& lock_;
 };
 
@@ -75,21 +78,17 @@ template <typename Data, typename Lock = InternalLock<std::mutex>>
 class Synchronized : private Data, private Lock
 {
 public:
-    /** Constructor template to add a lock parameter to the Data construction */
-    template <typename LockImpl, typename ...Args>
-    Synchronized(LockImpl& lock, Args... args);
+    /** Constructor template to copy a lock in addition to data construction */
+    template <typename ...Args>
+    Synchronized(const Lock& lock, Args... args);
 
-    /** Constructor template to construction data and use internal lock */
+    /** Constructor template to move a lock in addition to data construction */
+    template <typename ...Args>
+    Synchronized(Lock&& lock, Args... args);
+
+    /** Constructor template to default construct a lock in addition to data construction */
     template <typename ...Args>
     Synchronized(Args... args);
-
-    /**
-     * Explicit copy constructors. Needed as otherwise above templates will catch a copy attempt.
-     * TODO: Fix by restricting above templates
-     * TODO: If not fixed, need all cv-combinations?
-     */
-    Synchronized(const Synchronized& other);
-    Synchronized(Synchronized& other);
 
     /** Arrow operator to conveniently perform single call transactions */
     auto operator->();
@@ -153,10 +152,18 @@ private:
 
 // Synchronized implementation
 template <typename Data, typename Lock>
-template <typename LockImpl, typename ...Args>
-Synchronized<Data, Lock>::Synchronized(LockImpl& lock, Args... args)
+template <typename ...Args>
+Synchronized<Data, Lock>::Synchronized(const Lock& lock, Args... args)
   : Data(args...),
     Lock(lock)
+{
+}
+
+template <typename Data, typename Lock>
+template <typename ...Args>
+Synchronized<Data, Lock>::Synchronized(Lock&& lock, Args... args)
+  : Data(args...),
+    Lock(std::forward<Lock>(lock))
 {
 }
 
@@ -165,20 +172,6 @@ template <typename ...Args>
 Synchronized<Data, Lock>::Synchronized(Args... args)
   : Data(args...),
     Lock()
-{
-}
-
-template <typename Data, typename Lock>
-Synchronized<Data, Lock>::Synchronized(const Synchronized& other)
-: Data(other),
-  Lock(other)
-{
-}
-
-template <typename Data, typename Lock>
-Synchronized<Data, Lock>::Synchronized(Synchronized& other)
-  : Data(other),
-    Lock(other)
 {
 }
 

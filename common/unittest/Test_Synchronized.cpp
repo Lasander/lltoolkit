@@ -77,7 +77,7 @@ public:
 TEST(TestSynchronized, testSingleCall)
 {
     testing::StrictMock<MockLock> lock;
-    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 66);
+    Synchronized<MockData, ExternalLock<MockLock>> data(ExternalLock<MockLock>(lock), 66);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -133,7 +133,7 @@ TEST(TestSynchronized, testCustomLockType)
 TEST(TestSynchronized, testTransaction)
 {
     testing::StrictMock<MockLock> lock;
-    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 55);
+    Synchronized<MockData, ExternalLock<MockLock>> data(ExternalLock<MockLock>(lock), 55);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -148,7 +148,7 @@ TEST(TestSynchronized, testTransaction)
 TEST(TestSynchronized, testConstTransaction)
 {
     testing::StrictMock<MockLock> lock;
-    const Synchronized<const MockData, ExternalLock<MockLock>> data(lock, 44);
+    const Synchronized<const MockData, ExternalLock<MockLock>> data(ExternalLock<MockLock>(lock), 44);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
@@ -173,7 +173,7 @@ TEST(TestSynchronized, testConstTransactionWithInternalLock)
 TEST(TestSynchronized, testSingleCallDuringTransaction)
 {
     testing::StrictMock<MockLock> lock;
-    Synchronized<MockData, ExternalLock<MockLock>> data(lock, 55);
+    Synchronized<MockData, ExternalLock<MockLock>> data(ExternalLock<MockLock>(lock), 55);
 
     testing::InSequence sequence;
     EXPECT_CALL(lock, lock());
