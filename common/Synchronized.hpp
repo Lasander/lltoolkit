@@ -80,15 +80,15 @@ class Synchronized : private Data, private Lock
 public:
     /** Constructor template to copy a lock in addition to data construction */
     template <typename ...Args>
-    Synchronized(const Lock& lock, Args... args);
+    Synchronized(const Lock& lock, Args&&... args);
 
     /** Constructor template to move a lock in addition to data construction */
     template <typename ...Args>
-    Synchronized(Lock&& lock, Args... args);
+    Synchronized(Lock&& lock, Args&&... args);
 
     /** Constructor template to default construct a lock in addition to data construction */
     template <typename ...Args>
-    Synchronized(Args... args);
+    Synchronized(Args&&... args);
 
     /** Arrow operator to conveniently perform single call transactions */
     auto operator->();
@@ -153,24 +153,24 @@ private:
 // Synchronized implementation
 template <typename Data, typename Lock>
 template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(const Lock& lock, Args... args)
-  : Data(args...),
+Synchronized<Data, Lock>::Synchronized(const Lock& lock, Args&&... args)
+  : Data(std::forward<Args>(args)...),
     Lock(lock)
 {
 }
 
 template <typename Data, typename Lock>
 template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(Lock&& lock, Args... args)
-  : Data(args...),
+Synchronized<Data, Lock>::Synchronized(Lock&& lock, Args&&... args)
+: Data(std::forward<Args>(args)...),
     Lock(std::forward<Lock>(lock))
 {
 }
 
 template <typename Data, typename Lock>
 template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(Args... args)
-  : Data(args...),
+Synchronized<Data, Lock>::Synchronized(Args&&... args)
+: Data(std::forward<Args>(args)...),
     Lock()
 {
 }
