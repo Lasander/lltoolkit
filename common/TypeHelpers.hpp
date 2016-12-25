@@ -37,8 +37,6 @@ struct has_type<T, std::tuple<T, Ts...>> : std::true_type {};
 template <typename T, typename Tuple>
 using tuple_contains_type = typename has_type<T, Tuple>::type;
 
-
-
 template <typename Tuple>
 struct has_duplicate;
 template <>
@@ -84,12 +82,14 @@ T get_element_by_type(const std::tuple<Args...>& t)
 }
 
 template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args) {
+std::unique_ptr<T> make_unique_helper(std::false_type, Args&&... args)
+{
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 template <typename T, typename... Args>
-std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
+std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args)
+{
    static_assert(std::extent<T>::value == 0,
        "make_unique<T[N]>() is forbidden, please use make_unique<T[]>().");
 
@@ -98,9 +98,13 @@ std::unique_ptr<T> make_unique_helper(std::true_type, Args&&... args) {
 }
 
 template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
+std::unique_ptr<T> make_unique(Args&&... args)
+{
    return make_unique_helper<T>(std::is_array<T>(), std::forward<Args>(args)...);
 }
+
+template<typename... Ts> struct make_void { typedef void type; };
+template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
 } // namespace Common
 
