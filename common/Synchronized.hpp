@@ -134,7 +134,7 @@ private:
         ~ConstTransaction();
 
         /** Get access to the data and its original operations */
-        const Data* operator->();
+        const Data* operator->() const;
 
     private:
         friend class Synchronized;
@@ -256,7 +256,7 @@ Synchronized<Data, Lock>::ConstTransaction::~ConstTransaction()
 }
 
 template <typename Data, typename Lock>
-const Data* Synchronized<Data, Lock>::ConstTransaction::operator->()
+const Data* Synchronized<Data, Lock>::ConstTransaction::operator->() const
 {
     return obj_;
 }
