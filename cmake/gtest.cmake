@@ -1,53 +1,38 @@
-# gtest.
+# Download and unpack googletest at configure time
+configure_file(cmake/gtest/CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+if(result)
+    message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+    RESULT_VARIABLE result
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
+if(result)
+    message(FATAL_ERROR "Build step for googletest failed: ${result}")
+endif()
 
-include(ExternalProject)
+# Prevent overriding the parent project's compiler/linker
+# settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
-option(USE_GMOCK "If ON, not only gtest, but also gmock will be installed." ON)
+# Add googletest directly to our build. This defines
+# the gtest and gtest_main targets.
+add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
+                 ${CMAKE_BINARY_DIR}/googletest-build)
 
-if (USE_GMOCK)
-  ExternalProject_Add(gmock_ext
-          URL "https://googlemock.googlecode.com/files/gmock-1.7.0.zip"
-          BINARY_DIR "${CMAKE_BINARY_DIR}/third-party/gmock-build"
-          SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/gmock-src"
-          INSTALL_DIR "${CMAKE_BINARY_DIR}/third-party/gtest-build"
-          CMAKE_ARGS "${gtest_cmake_args}"
-            "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-          INSTALL_COMMAND ""
-              )
-  set(GTEST_INCLUDE_DIRS
-                   "${CMAKE_BINARY_DIR}/third-party/gmock-src/gtest/include"
-                   "${CMAKE_BINARY_DIR}/third-party/gmock-src/include"
-     )
-  link_directories(
-      "${CMAKE_BINARY_DIR}/third-party/gmock-build"
-      "${CMAKE_BINARY_DIR}/third-party/gmock-build/gtest"
-      )
-else (USE_GMOCK)
-  ExternalProject_Add(gtest_ext
-          SVN_REPOSITORY "http://googletest.googlecode.com/svn/tags/release-1.7.0"
-          BINARY_DIR "${CMAKE_BINARY_DIR}/third-party/gtest-build"
-          SOURCE_DIR "${CMAKE_BINARY_DIR}/third-party/gtest-src"
-          INSTALL_COMMAND ""
-          CMAKE_ARGS "${gtest_cmake_args}"
-            "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-          )
-  set(GTEST_INCLUDE_DIRS
-          "${CMAKE_BINARY_DIR}/third-party/gtest-src/include"
-     )
-endif (USE_GMOCK)
+# The gtest/gtest_main targets carry header search path
+# dependencies automatically when using CMake 2.8.11 or
+# later. Otherwise we have to add them here ourselves.
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+  include_directories("${gtest_SOURCE_DIR}/include")
+endif()
 
-enable_testing()
-
-find_package(Threads)
-
-function(cxx_test name sources)
-    add_executable(${name} ${sources})
-    target_link_libraries(${name} ${ARGN} gtest gmock ${CMAKE_THREAD_LIBS_INIT})
-    set_property(TARGET ${name} APPEND PROPERTY INCLUDE_DIRECTORIES
-                 ${GTEST_INCLUDE_DIRS}
-                 )
-    add_dependencies(${name} gmock_ext)
-    # Working directory: where the dlls are installed.
-    add_test(NAME ${name} 
-             COMMAND ${name} "--gtest_break_on_failure")
-endfunction()
+# Function to add tests to installation
+function(add_cxx_test name sources)
+  add_executable(${name} ${sources})
+  target_link_libraries(${name} gmock gtest_main)
+  add_test(NAME ${name} COMMAND ${name})
+  install (TARGETS ${name} DESTINATION bin)
+endfunction(add_cxx_test)

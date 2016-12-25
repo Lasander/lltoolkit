@@ -1,75 +1,40 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_ECLIPSE_VERSION "4.4" CACHE INTERNAL "Eclipse version" FORCE)
 
-project (LLToolkit)
+project(LLToolkit)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+# The version number.
+set(LLToolkit_VERSION_MAJOR 0)
+set(LLToolkit_VERSION_MINOR 1)
 
-set (USE_GMOCK 1)
+# configure a header file to pass some of the CMake settings to the source code
+configure_file(
+    "${PROJECT_SOURCE_DIR}/LLToolkitConfig.hpp.in"
+    "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp"
+)
+# add the binary tree to the search path for include files
+# so that we will find TutorialConfig.h
+include_directories("${PROJECT_BINARY_DIR}")
+
+# Append c++ compiler flags
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++ -Wall -Werror")
+
+# Testing support
+set(BUILD_GMOCK ON)
 include("cmake/gtest.cmake")
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++ -Wall -Werror")
+add_subdirectory(common) 
+add_subdirectory(data) 
+add_subdirectory(logic) 
 
-#add_executable(main main.cpp)
-#target_link_libraries(main nanomsg)
-#target_include_directories(main PUBLIC $<INSTALL_INTERFACE:include/nanomsg>)
+# add the executable
+add_executable(lltoolkit main.cpp)
 
-#add_executable(cloneserver cloneserver.cpp)
-#target_link_libraries(cloneserver nanomsg)
-#target_include_directories(cloneserver PUBLIC $<INSTALL_INTERFACE:include/nanomsg>)
+# Dummy install location
+set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install/")
 
-#add_executable(cloneclient cloneclient.cpp)
-#target_link_libraries(cloneclient nanomsg)
-#target_include_directories(cloneclient PUBLIC $<INSTALL_INTERFACE:include/nanomsg>)
+# add the install targets
+install (TARGETS lltoolkit DESTINATION bin)
+install (FILES "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp" DESTINATION include)
 
-find_package(Protobuf REQUIRED)
-include_directories(${PROTOBUF_INCLUDE_DIRS})
-
-# Common
-set(commonTestSources 
-	common/TypeHelpers.hpp
-	common/unittest/LogHelpers.hpp
-	common/unittest/Test_TypeHelpers.cpp
-)
-cxx_test(commonTests "${commonTestSources}" gtest_main)
-
-# Data
-protobuf_generate_cpp(DATA_PROTO_SRCS DATA_PROTO_HDRS data/unittest/Test.proto)
-set(dataTestSources
-    data/DataReadIf.hpp
-    data/DataWriteIf.hpp
-    data/DataIf.hpp
-    data/Data.hpp
-    data/DataModelReadIf.hpp
-    data/DataModelIf.hpp
-    data/DataModel.hpp
-    data/Publisher.hpp
-    data/SerializableIf.hpp
-	data/ConcreteQueue.hpp
-    data/ConfigurationReadIf.hpp
-    data/ConfigurationWriteIf.hpp
-    data/ConfigurationIf.hpp
-    data/Configuration.hpp
-    data/Configuration.cpp
-    data/CascadingConfigurationRead.hpp
-    data/CascadingConfigurationRead.cpp
-	data/HeterogeneousQueue.hpp
-	data/HeterogeneousRingBuffer.hpp
-	data/unittest/Test_ConcreteQueue.cpp
-	data/unittest/Test_Data.cpp
-	data/unittest/Test_DataModel.cpp
-	data/unittest/Test_Configuration.cpp
-	data/unittest/Test_HeterogeneousQueue.cpp
-	data/unittest/Test_HeterogeneousRingBuffer.cpp
-	${DATA_PROTO_SRCS} ${DATA_PROTO_HDRS}
-)
-cxx_test(dataTests "${dataTestSources}" gtest_main ${PROTOBUF_LIBRARIES})
-
-# Logic
-set(logicTestSources 
-	logic/StateMachine.hpp
-	logic/unittest/Test_StateMachine.cpp
-)
-cxx_test(logicTests "${logicTestSources}" gtest_main)
-
-add_subdirectory(doc)
+# # add_subdirectory(doc)
