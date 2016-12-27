@@ -31,6 +31,7 @@ public:
      * the buffer runs out.
      */
     HeterogeneousQueue(size_t initialSizeInBytes);
+    ~HeterogeneousQueue();
 
     /**
      * Push new element of type @p U to the buffer.
@@ -57,22 +58,19 @@ private:
     {
         Block(size_t sizeInBytes) :
             sizeInBytes_{sizeInBytes},
-            buffer_{new byte[sizeInBytes_]},
-            begin_{buffer_},
+            buffer_{std::make_unique<byte[]>(sizeInBytes_)},
+            begin_{buffer_.get()},
             end_{begin_ + sizeInBytes_},
-            writePosition_{buffer_},
+            writePosition_{buffer_.get()},
             freeSpace_(sizeInBytes_)
         {
-//            std::cout << "New block, size: " << sizeInBytes_ << std::endl;
+            //std::cout << "New block, size: " << sizeInBytes_ << std::endl;
         }
 
-        ~Block()
-        {
-            delete [] buffer_;
-        }
+        ~Block() = default;
 
         size_t sizeInBytes_;
-        byte* buffer_; // TODO: change to unique_ptr
+        std::unique_ptr<byte[]> buffer_;
         byte* begin_;
         byte* end_;
         byte* writePosition_; // write position
@@ -88,8 +86,8 @@ private:
         }
     };
 
-    Block* writeBlock_; // TODO: consider std::forward_list and a iterator to it
-    std::vector<Block*> decayingBlocks_;
+    std::unique_ptr<Block> writeBlock_; // TODO: consider std::forward_list and a iterator to it
+    std::vector<std::unique_ptr<Block>> decayingBlocks_;
 
     Common::Semaphore queuedMessages_;
     void notifyNewElement();
@@ -98,6 +96,7 @@ private:
     struct Envelope
     {
         Envelope(byte* next, const T* element, size_t size, Block* block);
+        virtual ~Envelope() = default;
         bool isNull() const;
 
         const Envelope* next_;
@@ -110,6 +109,7 @@ private:
     struct ElementEnvelope : public Envelope
     {
         ElementEnvelope(byte* next, U&& element, size_t size, Block* block);
+        ~ElementEnvelope() override = default;
 
         std::remove_reference_t<U> concreteElement_;
     };
@@ -149,9 +149,12 @@ private:
 
     void releaseCurrentEnvelope()
     {
-        const size_t size = currentEnvelope_->size_;
-        Block* block = currentEnvelope_->block_;
+        const Envelope* toBeReleasedEnvelope = currentEnvelope_;
         currentEnvelope_ = currentEnvelope_->next_;
+
+        const size_t size = toBeReleasedEnvelope->size_;
+        Block* block = toBeReleasedEnvelope->block_;
+        toBeReleasedEnvelope->~Envelope();
         block->releaseSpace(size);
     }
 
@@ -163,16 +166,32 @@ private:
 
 template <typename T>
 HeterogeneousQueue<T>::HeterogeneousQueue(size_t initialSizeInBytes) :
-    writeBlock_{new Block(initialSizeInBytes)},
+    writeBlock_{std::make_unique<Block>(initialSizeInBytes)},
     decayingBlocks_{},
     queuedMessages_{0},
-    currentEnvelope_{reinterpret_cast<Envelope*>(writeBlock_->buffer_)},
+    currentEnvelope_{reinterpret_cast<Envelope*>(writeBlock_->buffer_.get())},
     hasCurrentEnvelope_(false)
 {
-    //std::cout << "Initial writeBlock_: " << (long long)writeBlock_ << std::endl;
+    //std::cout << "Initial writeBlock_: " << (long long)writeBlock_.get() << std::endl;
     //std::cout << "Initial writeBlock_->begin_: " << (long long)writeBlock_->begin_ << std::endl;
-    //std::cout << "Initial writeBlock_->end_: " << (long long)writeBlock_->begin_ << std::endl;
+    //std::cout << "Initial writeBlock_->end_: " << (long long)writeBlock_->end_ << std::endl;
     //std::cout << "Initial currentEnvelope_: " << (long long)currentEnvelope_ << std::endl;
+}
+
+template <typename T>
+HeterogeneousQueue<T>::~HeterogeneousQueue()
+{
+    while (!isEmpty())
+    {
+        (void)dequeue();
+    }
+
+    // Release the last one, if any
+    if (hasCurrentEnvelope_)
+    {
+        //std::cout << "Releasing last" << std::endl;
+        releaseCurrentEnvelope();
+    }
 }
 
 template <typename T>
@@ -189,9 +208,9 @@ void HeterogeneousQueue<T>::enqueue(U&& element)
 
     //std::cout << "W: Free space in block: " << freeSpaceInBlock << std::endl;
 
-    const bool fitInBack = potentialSpaceAtBack >= minimumSpaceNeeded && freeSpaceInBlock >= minimumSpaceNeeded;
+    const bool fitsInBack = potentialSpaceAtBack >= minimumSpaceNeeded && freeSpaceInBlock >= minimumSpaceNeeded;
     const bool fitsInBegin = freeSpaceInBlock >= (potentialSpaceAtBack + minimumSpaceNeeded);
-    if (fitInBack)
+    if (fitsInBack)
     {
         //std::cout << "W: Inserting to back: " << envelopeSize << std::endl;
 
@@ -205,10 +224,8 @@ void HeterogeneousQueue<T>::enqueue(U&& element)
 
         writeBlock_->waitForSpace(potentialSpaceAtBack + envelopeSize);
 
-        for (auto block : decayingBlocks_)
-        {
-            delete block;
-        }
+        // If we are able to fill to the beginning of the block, it means any previous blocks have already
+        // been fully dequed, and we can release their memory.
         decayingBlocks_.clear();
 
         insertPadding(potentialSpaceAtBack); // To fill leftover
@@ -219,13 +236,13 @@ void HeterogeneousQueue<T>::enqueue(U&& element)
         //std::cout << "W: Inserting to new block: " << envelopeSize << std::endl;
 
         // Does not fit in block, allocate new block and insert there
-        Block* newWriteBlock = new Block(writeBlock_->sizeInBytes_ * 2);
+        auto newWriteBlock = std::make_unique<Block>(writeBlock_->sizeInBytes_ * 2);
 
         writeBlock_->waitForSpace(sizeof(Envelope));
-        (void)new (writeBlock_->writePosition_) Envelope(newWriteBlock->begin_, nullptr, sizeof(Envelope), writeBlock_);
+        (void)new (writeBlock_->writePosition_) Envelope(newWriteBlock->begin_, nullptr, sizeof(Envelope), writeBlock_.get());
 
-        decayingBlocks_.push_back(writeBlock_);
-        writeBlock_ = newWriteBlock;
+        decayingBlocks_.push_back(std::move(writeBlock_));
+        writeBlock_ = std::move(newWriteBlock);
 
         writeBlock_->waitForSpace(envelopeSize);
         insertElement(std::forward<U>(element), envelopeSize);
@@ -245,7 +262,7 @@ const T& HeterogeneousQueue<T>::dequeue()
 {
     if (hasCurrentEnvelope_)
     {
-        //std::cerr << "R: Releasing old" << std::endl;
+        //std::cout << "R: Releasing old" << std::endl;
         releaseCurrentEnvelope();
         waitForElement();
     }
@@ -257,13 +274,13 @@ const T& HeterogeneousQueue<T>::dequeue()
 
     while (isCurrentEnvelopePadding())
     {
-        //std::cerr << "R: Releasing padding" << std::endl;
-        //std::cerr << "R: Read padding from: " << (long long)currentEnvelope_ << " in block: " << (long long)currentEnvelope_->block_ << std::endl;
+        //std::cout << "R: Releasing padding" << std::endl;
+        //std::cout << "R: Read padding from: " << (long long)currentEnvelope_ << " in block: " << (long long)currentEnvelope_->block_ << std::endl;
         releaseCurrentEnvelope();
     }
 
-    //std::cerr << "R: Read element from: " << (long long)currentEnvelope_ << " in block: " << (long long)currentEnvelope_->block_ << std::endl;
-    //std::cerr << "R: Free space in block: " << (int)currentEnvelope_->block_->freeSpace_.getCount() << std::endl;
+    //std::cout << "R: Read element from: " << (long long)currentEnvelope_ << " in block: " << (long long)currentEnvelope_->block_ << std::endl;
+    //std::cout << "R: Free space in block: " << (int)currentEnvelope_->block_->freeSpace_.getCount() << std::endl;
 
     return currentEnvelopedElement();
 }
@@ -300,6 +317,7 @@ HeterogeneousQueue<T>::ElementEnvelope<U>::ElementEnvelope(byte* next, U&& eleme
     Envelope(next, &concreteElement_, size, block),
     concreteElement_(std::forward<U>(element))
 {
+    //std::cout << "W: Element address: " << (long long)&concreteElement_ << " in block: " << (long long)block << std::endl;
 }
 
 template <typename T>
@@ -308,18 +326,18 @@ void HeterogeneousQueue<T>::insertElement(U&& element, size_t envelopeSize)
 {
     byte* next = writeBlock_->writePosition_ + envelopeSize;
 
-    //std::cout << "W: Inserting element to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_ << std::endl;
+    //std::cout << "W: Inserting element to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_.get() << std::endl;
 
-    (void)new (writeBlock_->writePosition_) ElementEnvelope<U>(next, std::forward<U>(element), envelopeSize, writeBlock_);
+    (void)new (writeBlock_->writePosition_) ElementEnvelope<U>(next, std::forward<U>(element), envelopeSize, writeBlock_.get());
     writeBlock_->writePosition_ = next;
 }
 
 template <typename T>
 void HeterogeneousQueue<T>::insertPadding(size_t paddingSize)
 {
-    //std::cout << "W: Inserting padding to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_ << std::endl;
+    //std::cout << "W: Inserting padding to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_.get() << std::endl;
 
-    (void)new (writeBlock_->writePosition_) Envelope(writeBlock_->begin_, nullptr, paddingSize, writeBlock_);
+    (void)new (writeBlock_->writePosition_) Envelope(writeBlock_->begin_, nullptr, paddingSize, writeBlock_.get());
     writeBlock_->writePosition_ = writeBlock_->begin_;
 }
 

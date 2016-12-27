@@ -73,11 +73,14 @@ enum ElementId
     STRING_ELEMENT
 };
 
+static std::atomic<int> elementCounterS(0);
+
 class ElementIf
 {
 public:
+    ElementIf() {++elementCounterS;}
     virtual ElementId getId() const = 0;
-    virtual ~ElementIf() {}
+    virtual ~ElementIf() {--elementCounterS;}
 };
 
 class EmptyElement : public ElementIf
@@ -85,6 +88,10 @@ class EmptyElement : public ElementIf
 public:
     static const ElementId ID_T = EMPTY_ELEMENT;
     virtual ElementId getId() const { return ID_T; }
+
+    EmptyElement() = default;
+    EmptyElement(EmptyElement&&) {}
+    EmptyElement(const EmptyElement&) {}
 };
 
 template <ElementId ID, typename DataType>
@@ -130,22 +137,31 @@ const T& element_cast(const ElementIf& element)
 
 TEST(HeterogeneousQueue, ElementQueue)
 {
-    HeterogeneousQueue<ElementIf> queue(256);
-    EXPECT_TRUE(queue.isEmpty());
-
-    for (int i = 0; i < 1000; ++i)
+    elementCounterS = 0;
     {
-        queue.enqueue(EmptyElement());
-        EXPECT_FALSE(queue.isEmpty());
-
-        queue.enqueue(DoubleElement(3.1415));
-        EXPECT_EQ(EMPTY_ELEMENT, queue.dequeue().getId());
-
-        queue.enqueue(StringElement("Brown fox jumps over the lazy dog and does this and that"));
-        EXPECT_EQ(3.1415, (element_cast<DoubleElement>(queue.dequeue())).data());
-        EXPECT_EQ(std::string("Brown fox jumps over the lazy dog and does this and that"), (element_cast<StringElement>(queue.dequeue())).data());
+        HeterogeneousQueue<ElementIf> queue(256);
         EXPECT_TRUE(queue.isEmpty());
+
+        for (int i = 0; i < 1000; ++i)
+        {
+            queue.enqueue(EmptyElement());
+            EXPECT_FALSE(queue.isEmpty());
+
+            queue.enqueue(DoubleElement(3.1415));
+            EXPECT_EQ(EMPTY_ELEMENT, queue.dequeue().getId());
+
+            queue.enqueue(StringElement("Brown fox jumps over the lazy dog and does this and that"));
+            EXPECT_EQ(3.1415, (element_cast<DoubleElement>(queue.dequeue())).data());
+            EXPECT_EQ(std::string("Brown fox jumps over the lazy dog and does this and that"), (element_cast<StringElement>(queue.dequeue())).data());
+            EXPECT_TRUE(queue.isEmpty());
+        }
+
+        // Leave some elements to the queue when it's destructed
+        queue.enqueue(EmptyElement());
+        queue.enqueue(DoubleElement(3.1415));
+        queue.enqueue(StringElement("Brown fox jumps over the lazy dog and does this and that"));
     }
+    EXPECT_EQ(0, elementCounterS);
 }
 
 
