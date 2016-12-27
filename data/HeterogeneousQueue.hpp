@@ -4,6 +4,7 @@
 #include "../common/Semaphore.hpp"
 #include <iostream>
 #include <assert.h>
+#include <type_traits>
 #include <vector>
 
 namespace Data {
@@ -13,7 +14,7 @@ namespace Data {
  * from defined interface @p T.
  *
  * The objects are actually copied to the buffer itself so they need to be
- * copyable.
+ * copyable or movable.
  *
  * Thread-safe for one reader and one writer.
  *
@@ -36,7 +37,7 @@ public:
      * Will allocate more space if there's not enough to push immediately.
      */
     template <typename U>
-    void enqueue(const U& element);
+    void enqueue(U&& element);
 
     /** @return True if there are no elements in the buffer */
     bool isEmpty() const;
@@ -96,11 +97,11 @@ private:
 
     struct Envelope
     {
-        Envelope(byte* next, T* element, size_t size, Block* block);
+        Envelope(byte* next, const T* element, size_t size, Block* block);
         bool isNull() const;
 
         const Envelope* next_;
-        T* element_;
+        const T* element_;
         size_t size_;
         Block* block_;
     };
@@ -108,16 +109,16 @@ private:
     template <typename U>
     struct ElementEnvelope : public Envelope
     {
-        ElementEnvelope(byte* next, const U& element, size_t size, Block* block);
+        ElementEnvelope(byte* next, U&& element, size_t size, Block* block);
 
-        U concreteElement_;
+        std::remove_reference_t<U> concreteElement_;
     };
 
     const Envelope* currentEnvelope_;
     bool hasCurrentEnvelope_;
 
     template <typename U>
-    void insertElement(const U& element, size_t envelopeSize);
+    void insertElement(U&& element, size_t envelopeSize);
 
     void insertPadding(size_t paddingSize);
 
@@ -129,7 +130,7 @@ private:
         static const auto maxAlignment = alignof(std::max_align_t);
         const size_t unalignedSize = sizeof(ElementEnvelope<U>);
 
-        size_t remainder = unalignedSize % maxAlignment;
+        const size_t remainder = unalignedSize % maxAlignment;
         if (remainder == 0)
             return unalignedSize;
 
@@ -176,7 +177,7 @@ HeterogeneousQueue<T>::HeterogeneousQueue(size_t initialSizeInBytes) :
 
 template <typename T>
 template <typename U>
-void HeterogeneousQueue<T>::enqueue(const U& element)
+void HeterogeneousQueue<T>::enqueue(U&& element)
 {
     const size_t envelopeSize = calculateEnvelopeSize(element);
     const size_t minimumSpaceNeeded = envelopeSize + sizeof(Envelope);
@@ -195,7 +196,7 @@ void HeterogeneousQueue<T>::enqueue(const U& element)
         //std::cout << "W: Inserting to back: " << envelopeSize << std::endl;
 
         writeBlock_->waitForSpace(envelopeSize);
-        insertElement(element, envelopeSize);
+        insertElement(std::forward<U>(element), envelopeSize);
     }
     else if (fitsInBegin)
     {
@@ -211,7 +212,7 @@ void HeterogeneousQueue<T>::enqueue(const U& element)
         decayingBlocks_.clear();
 
         insertPadding(potentialSpaceAtBack); // To fill leftover
-        insertElement(element, envelopeSize);
+        insertElement(std::forward<U>(element), envelopeSize);
     }
     else
     {
@@ -227,7 +228,7 @@ void HeterogeneousQueue<T>::enqueue(const U& element)
         writeBlock_ = newWriteBlock;
 
         writeBlock_->waitForSpace(envelopeSize);
-        insertElement(element, envelopeSize);
+        insertElement(std::forward<U>(element), envelopeSize);
     }
 
     notifyNewElement();
@@ -279,7 +280,7 @@ void HeterogeneousQueue<T>::waitForElement()
 }
 
 template <typename T>
-HeterogeneousQueue<T>::Envelope::Envelope(byte* next, T* element, size_t size, Block* block) :
+HeterogeneousQueue<T>::Envelope::Envelope(byte* next, const T* element, size_t size, Block* block) :
     next_(reinterpret_cast<Envelope*>(next)),
     element_(element),
     size_(size),
@@ -295,21 +296,21 @@ bool HeterogeneousQueue<T>::Envelope::isNull() const
 
 template <typename T>
 template <typename U>
-HeterogeneousQueue<T>::ElementEnvelope<U>::ElementEnvelope(byte* next, const U& element, size_t size, Block* block) :
+HeterogeneousQueue<T>::ElementEnvelope<U>::ElementEnvelope(byte* next, U&& element, size_t size, Block* block) :
     Envelope(next, &concreteElement_, size, block),
-    concreteElement_(element)
+    concreteElement_(std::forward<U>(element))
 {
 }
 
 template <typename T>
 template <typename U>
-void HeterogeneousQueue<T>::insertElement(const U& element, size_t envelopeSize)
+void HeterogeneousQueue<T>::insertElement(U&& element, size_t envelopeSize)
 {
     byte* next = writeBlock_->writePosition_ + envelopeSize;
 
     //std::cout << "W: Inserting element to: " << (long long)writeBlock_->writePosition_ << " in block: " << (long long)writeBlock_ << std::endl;
 
-    (void)new (writeBlock_->writePosition_) ElementEnvelope<U>(next, element, envelopeSize, writeBlock_);
+    (void)new (writeBlock_->writePosition_) ElementEnvelope<U>(next, std::forward<U>(element), envelopeSize, writeBlock_);
     writeBlock_->writePosition_ = next;
 }
 

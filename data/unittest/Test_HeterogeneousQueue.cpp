@@ -92,8 +92,22 @@ class Element : public ElementIf
 {
 public:
     static const ElementId ID_T = ID;
+
     Element() : data_{} {}
     Element(const DataType& data) : data_{data} {}
+    Element(DataType&& data) : data_{std::move(data)} {}
+    Element(const Element& other) : data_{other.data_} {}
+    Element(Element&& other) : data_{std::move(other.data_)} {}
+    ~Element() = default;
+
+    Element& operator=(Element&& other)
+    {
+        if (&other != this)
+        {
+            data_ = std::move(other.data_);
+        }
+        return *this;
+    }
     virtual ElementId getId() const { return ID_T; }
     const DataType& data() const { return data_; }
 
