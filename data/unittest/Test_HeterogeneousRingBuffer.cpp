@@ -1,4 +1,4 @@
-#include "../../Common/unittest/LogHelpers.hpp"
+#include "../../common/unittest/LogHelpers.hpp"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 #include <thread>
