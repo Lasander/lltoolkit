@@ -47,7 +47,7 @@ struct Low : public LevelState {
 
 } // anonymous namespace
 
-TEST(StateMachineTest, machine2)
+TEST(StateMachineTest, simple)
 {
     Actions a;
     LevelState::Machine m(a);
@@ -61,5 +61,3 @@ TEST(StateMachineTest, machine2)
 
 
 } // namespace Logic
-
-
