@@ -1,0 +1,770 @@
+#pragma once
+
+#include <cassert>
+#include <set>
+#include <map>
+#include <queue>
+#include <iostream>
+#include <tuple>
+
+namespace Logic3 {
+
+/**
+ * State machine implementation defined by:
+ * @tparam ConcreteMachine Machine with function for input events
+ * @tparam State State type (enumeration)
+ *
+ * Supported features:
+ * - Transitions between states on events
+ * - State-internal transitions
+ * - Guard conditions on transitions
+ * - Transition actions
+ * - State entry/exit actions
+ * - Recursive events (event calls resulting from actions)
+ *     - Recursive calls are queued and handled after completing
+ *       the handling of the current event
+ *     - Note: As any event could be recursive, all event parameters
+ *       must be copyable or movable.
+ */
+template <typename ConcreteMachine, typename State>
+class StateMachine
+{
+public:
+    /** Construct a machine in initial @p state */
+    StateMachine(State state);
+    ~StateMachine() = default;
+
+    /**
+     * Event function type:
+     * - a member function of the ConcreteMachine,
+     * - taking arbitratry parameters, and
+     * - returning void
+     *
+     * @see handle
+     */
+    template <typename ...Args>
+    using EventFunc = void(ConcreteMachine::*)(Args...);
+
+    /**
+     * Handle @p event with @p args.
+     *
+     * Can be called directy of from the event functions in the ConcreteMachine. E.g.
+     *
+     * class MyMachine
+     * {
+     * public:
+     *     ...
+     *     void event(int param) { impl.handle(&MyMachine::event, param); }
+     * private:
+     *     Machine<MyMachine, State> impl;
+     * };
+     *
+     * Any recursive events caused by actions of the transitions will be queued and
+     * handled after the previous event has been fully handled.
+     */
+    template<typename ...Args, typename ...Args2>
+    void handle(EventFunc<Args...> event, Args2&&... args);
+
+    /** Shortcut for @see handle */
+    template<typename ...Args, typename ...Args2>
+    void operator()(EventFunc<Args...> event, Args2&&... args);
+
+    /**
+     * Builder for machine transitions
+     *
+     * Create with @see onTransition.
+     * Add event condition and/or action using the member functions, e.g.
+     *
+     *   onTransition(START, NEXT, &MyMachine::event).when(<condition>).invoke(<action>)
+     */
+    template<typename ...Args>
+    class TransitionBuilder
+    {
+    public:
+        /**
+         * @name Add transition condition
+         *
+         * Condition must:
+         * - be a callable with the event parameters
+         * - return value convertible to boolean
+         */
+        ///@{
+        template<typename Condition>
+        auto when(Condition&& action) -> TransitionBuilder&;
+        template<typename T, typename R>
+        auto when(T& obj, R(T::*function)(Args...)) -> TransitionBuilder&;
+        template<typename T, typename R>
+        auto when(const T& obj, R(T::*function)(Args...) const) -> TransitionBuilder&;
+        ///@}
+
+        /**
+         * @name Add transition action
+         *
+         * Action must:
+         * - be a callable with the event parameters
+         *
+         * Note: any return value from action is ignored.
+         */
+        ///@{
+        template<typename Action>
+        void invoke(Action&& action);
+        template<typename T, typename R>
+        void invoke(T& obj, R(T::*function)(Args...));
+        template<typename T, typename R>
+        void invoke(const T& obj, R(T::*function)(Args...) const);
+        ///@}
+
+        ~TransitionBuilder();
+        TransitionBuilder(const TransitionBuilder&) = delete;
+        TransitionBuilder& operator=(const TransitionBuilder&) = delete;
+
+    private:
+        // Allow Machine to create and move
+        friend class StateMachine;
+
+        TransitionBuilder(StateMachine& machine, State current, State next, EventFunc<Args...> event, bool internal);
+        TransitionBuilder(TransitionBuilder&&) = default;
+
+    private:
+        StateMachine& machine_;
+        State current_;
+        State next_;
+        EventFunc<Args...> event_;
+        std::shared_ptr<void> condition_;
+        std::shared_ptr<void> action_;
+        bool internal_;
+    };
+
+    /**
+     * Add transition from @p current to @p next on @p event
+     *
+     * @see TransitionBuilder for adding conditions and actions to the transition
+     * Transition to self will cause state to be re-entered.
+     */
+    template<typename ...Args>
+    auto onTransition(State current, State next, EventFunc<Args...> event) -> TransitionBuilder<Args...>;
+    /**
+     * Add internal transition in @p current on @p event
+     *
+     * @see TransitionBuilder for adding conditions and actions to the transition
+     * State will not be re-entered.
+     */
+    template<typename ...Args>
+    auto onTransition(State current, EventFunc<Args...> event) -> TransitionBuilder<Args...>;
+
+    /**
+     * Builder for extry and exit actions
+     *
+     * Create with @see onEntry or @see onExit
+     * Add the action using the invoke member functions, e.g.
+     *
+     *   onEntry(START).invoke(<action>)
+     */
+    class EntryExitActionBuilder
+    {
+    public:
+        /**
+         * @name Add action
+         *
+         * Action must:
+         * - be a callable without parameter
+         *
+         * Note: any return value from action is ignored.
+         */
+        ///@{
+        template<typename Action>
+        void invoke(Action&& action);
+        template<typename T, typename R>
+        void invoke(T& obj, R(T::*function)());
+        template<typename T, typename R>
+        void invoke(const T& obj, R(T::*function)() const);
+        ///@}
+
+        ~EntryExitActionBuilder();
+        EntryExitActionBuilder(const EntryExitActionBuilder&) = delete;
+        EntryExitActionBuilder& operator=(const EntryExitActionBuilder&) = delete;
+
+    private:
+        // Allow Machine to create and move
+        friend class StateMachine;
+
+        EntryExitActionBuilder(StateMachine& machine, State current, bool entry);
+        EntryExitActionBuilder(EntryExitActionBuilder&&) = default;
+
+    private:
+        StateMachine& machine_;
+        State current_;
+        bool entry_;
+        std::function<void()> action_;
+    };
+
+    /**
+     * Add entry action for @p state
+     *
+     * Use invoke() methods on the returned object to add the desired action.
+     *
+     * In case @p state is the initial state and no events have been handled the
+     * action will be performed.
+     */
+    auto onEntry(State state) -> EntryExitActionBuilder;
+
+    /**
+     * Add exit action for @p state
+     *
+     * Use invoke() methods on the returned object to add the desired action.
+     */
+    auto onExit(State state) -> EntryExitActionBuilder;
+
+    /** @return current state */
+    State getState() const;
+
+private:
+    /** Action function type */
+    template <typename ...Args>
+    using ActionFunc = std::function<void(Args...)>;
+
+    /** Conditon function type */
+    template <typename ...Args>
+    using ConditionFunc = std::function<bool(Args...)>;
+
+    template<typename A, typename C, typename ...Args>
+    void addTransition(
+        State current, EventFunc<Args...> event, State next,
+        std::shared_ptr<C> condition, std::shared_ptr<A> action,
+        bool internal);
+
+    void addEntryAction(State state, std::function<void()> action);
+    void addExitAction(State state, std::function<void()> action);
+
+    /** Helper to execute one event. @see handle */
+    template<typename ...Args, typename ...Args2>
+    void execute(EventFunc<Args...> event, Args2&&... args);
+
+    /** Execute state entry action, if any */
+    void enter(State state);
+    /** Execute state exit action, if any */
+    void exit(State state);
+
+    /** Current state */
+    State state_;
+
+    /**
+     * Encapsulate a transition [current state + event -> next state + action]
+     *
+     * Unique transition is defined by a (current state, event) pair.
+     */
+    class Transition
+    {
+    public:
+        /**
+         * Construct new transition
+         *
+         * @param current Start state
+         * @param event Trigger event
+         * @param next New state
+         * @param condition Transition condition, nullptr for no condition
+         * @param action Transition action, nullptr for no action
+         * @param internal True if this is actually an internal action rather
+         *                 than a true transition. Internal action does not
+         *                 change the state (or cause current state to be
+         *                 re-entered), but is most easily modeled as a
+         *                 (custom) transition to self.
+         */
+        template <typename A, typename C, typename ...Args>
+        Transition(
+            State current, EventFunc<Args...> event, State next,
+            std::shared_ptr<C> condition, std::shared_ptr<A> action,
+            bool internal);
+
+        ~Transition() = default;
+        Transition(const Transition&) = delete;
+        Transition& operator=(const Transition&) = delete;
+        Transition(Transition&& t) = default;
+
+        /**
+         * @return true if this transition changes state, i.e. should exit/entry actions
+         *         be performed then executing this transition.
+         */
+        bool changesState() const;
+
+        /** @return transition condition result for @p event with @p args */
+        template<typename ...Args, typename ...Args2>
+        bool checkCondition(EventFunc<Args...> event, Args2&&... args) const;
+
+        /**
+         * Execute transition for @p event with @p args
+         * @return new state
+         */
+        template<typename ...Args, typename ...Args2>
+        State execute(EventFunc<Args...> event, Args2&&... args) const;
+
+        using Id = std::pair<State, int>;
+
+        Id getIdentifier() const
+        {
+            return std::make_pair(current_, event_);
+        }
+
+        template <typename ...Args>
+        static Id createIdentifier(State state, EventFunc<Args...> event)
+        {
+            return std::make_pair(state, identify(event));
+        }
+
+        /**
+         * @return true if this transition is "less-than" @p other
+         *
+         * Needed for Transition sortability required for storage in a set.
+         */
+        bool operator<(const Transition& other) const;
+
+    private:
+        /** @return unique identifier for @p event in this machine instance */
+        template <typename ...Args>
+        static int identify(EventFunc<Args...> event);
+        /** Helper used by @see identify */
+        static int getEventIndex();
+
+        State current_;
+        int event_;
+        State next_;
+        std::shared_ptr<void> action_;
+        std::shared_ptr<void> condition_;
+        bool internal_;
+    };
+
+    /** Registered transitions */
+    std::multimap<typename Transition::Id, const Transition> transitions_;
+
+    /** Entry and exit action function type */
+    using EntryExitActionFunc = std::function<void()>;
+
+    /** Entry actions */
+    std::map<State, EntryExitActionFunc> entryActions_;
+    /**
+     * Keep track whether the initial state entry action (if any) has been executed.
+     * The action will be executed when added provided that no event have been processed.
+     */
+    bool initialEntryExecuted_;
+
+    /** Exit actions */
+    std::map<State, EntryExitActionFunc> exitActions_;
+
+    /** Queued events */
+    int eventCount_;
+    std::queue<std::function<void()>> events_;
+};
+
+template <typename ConcreteMachine, typename State>
+StateMachine<ConcreteMachine, State>::StateMachine(State state)
+  : state_(state),
+    transitions_(),
+    entryActions_(),
+    initialEntryExecuted_(false),
+    exitActions_(),
+    eventCount_(),
+    events_()
+{
+}
+
+// Implement std::apply from c++17 using c++14
+namespace std17 {
+namespace details {
+template <typename F, typename Tuple, std::size_t...Is>
+decltype(auto) apply(std::index_sequence<Is...>, F&& f, Tuple&& tuple)
+{
+    return std::forward<F>(f)(std::get<Is>(std::forward<Tuple>(tuple))...);
+}
+} // namespace details
+
+template <typename F, typename Tuple>
+decltype(auto) apply(F&& f, Tuple&& tuple)
+{
+    return std17::details::apply(std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>{}, std::forward<F>(f), std::forward<Tuple>(tuple));
+}
+} // namespace cpp17
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+void StateMachine<ConcreteMachine, State>::handle(EventFunc<Args...> event, Args2&&... args)
+{
+    // Initial entry cannot be executed after events
+    initialEntryExecuted_ = true;
+
+    if (++eventCount_ > 1)
+    {
+        // Handle recursive events after current handling is done
+        // Store (copy) the arguments, as they might be out of scope by the time we handle the event
+        // Note: cannot use unique_ptr as a copyable type is needed for storing in std::function
+        auto storedArgs = std::make_shared<std::tuple<std::remove_reference_t<Args2>...>>(std::forward<Args2>(args)...);
+        auto storedFunc = [this, event, storedArgs]
+            {
+                auto execFunc = [this, event](auto&&... a) mutable { execute(event, std::forward<Args2>(a)...); };
+                std17::apply(execFunc, *storedArgs);
+            };
+        events_.emplace(storedFunc);
+        return;
+    }
+
+    // Handle primary event
+    execute(event, std::forward<Args2>(args)...);
+
+    // Handle queued events
+    while (!events_.empty())
+    {
+        events_.front()();
+        events_.pop();
+    }
+
+    assert(eventCount_ == 0);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+void StateMachine<ConcreteMachine, State>::operator()(EventFunc<Args...> event, Args2&&... args)
+{
+    handle(event, std::forward<Args2>(args)...);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename Condition>
+auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(Condition&& action) -> TransitionBuilder&
+{
+    condition_ = std::make_shared<ConditionFunc<Args...>>(std::forward<Condition>(action));
+    return *this;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename T, typename R>
+auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(T& obj, R(T::*function)(Args...)) -> TransitionBuilder&
+{
+    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args...>(args...)); };
+    condition_ = std::make_shared<ActionFunc<Args...>>(f);
+    return *this;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename T, typename R>
+auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(const T& obj, R(T::*function)(Args...) const) -> TransitionBuilder&
+{
+    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args...>(args...)); };
+    condition_ = std::make_shared<ActionFunc<Args...>>(f);
+    return *this;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename Action>
+void StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::invoke(Action&& action)
+{
+    action_ = std::make_shared<ActionFunc<Args...>>(std::forward<Action>(action));
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename T, typename R>
+void StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::invoke(T& obj, R(T::*function)(Args...))
+{
+    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args...>(args...)); };
+    action_ = std::make_shared<ActionFunc<Args...>>(f);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+template<typename T, typename R>
+void StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::invoke(const T& obj, R(T::*function)(Args...) const)
+{
+    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args...>(args...)); };
+    action_ = std::make_shared<ActionFunc<Args...>>(f);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::~TransitionBuilder()
+{
+    machine_.addTransition(current_, event_, next_, condition_, action_, internal_);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::TransitionBuilder(
+    StateMachine& machine, State current, State next, EventFunc<Args...> event, bool internal)
+  : machine_(machine), current_(current), next_(next), event_(event), condition_(), action_(), internal_(internal)
+{
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+auto StateMachine<ConcreteMachine, State>::onTransition(State current, State next, EventFunc<Args...> event) -> TransitionBuilder<Args...>
+{
+    return TransitionBuilder<Args...>(*this, current, next, event, false);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args>
+auto StateMachine<ConcreteMachine, State>::onTransition(State current, EventFunc<Args...> event) -> TransitionBuilder<Args...>
+{
+    return TransitionBuilder<Args...>(*this, current, current, event, true);
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename Action>
+void StateMachine<ConcreteMachine, State>::EntryExitActionBuilder::invoke(Action&& action)
+{
+    action_ = action;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename T, typename R>
+void StateMachine<ConcreteMachine, State>::EntryExitActionBuilder::invoke(T& obj, R(T::*function)())
+{
+    action_ = [&obj, function](){ (obj.*function)(); };
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename T, typename R>
+void StateMachine<ConcreteMachine, State>::EntryExitActionBuilder::invoke(const T& obj, R(T::*function)() const)
+{
+    action_ = [&obj, function](){ (obj.*function)(); };
+}
+
+template <typename ConcreteMachine, typename State>
+StateMachine<ConcreteMachine, State>::EntryExitActionBuilder::~EntryExitActionBuilder()
+{
+    if (entry_)
+    {
+        machine_.addEntryAction(current_, action_);
+    }
+    else
+    {
+        machine_.addExitAction(current_, action_);
+    }
+}
+
+template <typename ConcreteMachine, typename State>
+StateMachine<ConcreteMachine, State>::EntryExitActionBuilder::EntryExitActionBuilder(StateMachine& machine, State current, bool entry)
+  : machine_(machine), current_(current), entry_(entry)
+{
+}
+
+template <typename ConcreteMachine, typename State>
+auto StateMachine<ConcreteMachine, State>::onEntry(State state) -> EntryExitActionBuilder
+{
+    return EntryExitActionBuilder(*this, state, true);
+}
+
+template <typename ConcreteMachine, typename State>
+auto StateMachine<ConcreteMachine, State>::onExit(State state) -> EntryExitActionBuilder
+{
+    return EntryExitActionBuilder(*this, state, false);
+}
+
+template <typename ConcreteMachine, typename State>
+State StateMachine<ConcreteMachine, State>::getState() const
+{
+    return state_;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename A, typename C, typename ...Args>
+void StateMachine<ConcreteMachine, State>::addTransition(
+    State current, EventFunc<Args...> event, State next,
+    std::shared_ptr<C> condition, std::shared_ptr<A> action,
+    bool internal)
+{
+    transitions_.emplace(std::make_pair(
+        Transition::createIdentifier(current, event),
+        Transition(current, event, next, condition, action, internal)));
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::addEntryAction(State state, std::function<void()> action)
+{
+    if (!entryActions_.emplace(state, action).second)
+    {
+        std::cerr << "duplicate entry action for state " << state << std::endl;
+    }
+
+    // If this an entry action for the initial state execute it
+    if (!initialEntryExecuted_ && state == state_)
+    {
+        initialEntryExecuted_ = true;
+        enter(state);
+    }
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::addExitAction(State state, std::function<void()> action)
+{
+    if (!exitActions_.emplace(state, action).second)
+    {
+        std::cerr << "duplicate exit action for state " << state << std::endl;
+    }
+}
+
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Args2&&... args)
+{
+    auto range = transitions_.equal_range(Transition::createIdentifier(state_, event));
+    auto it = range.first;
+
+    bool found = false;
+    for (; it != range.second; ++it)
+    {
+        if (it->second.checkCondition(event, std::forward<Args2>(args)...))
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        // Unhandled event
+        std::cerr << "Unhandled event " << typeid(event).name() << " in state " << state_ << std::endl;
+        --eventCount_;
+        return;
+    }
+
+    const bool stateChanges = it->second.changesState();
+    if (stateChanges)
+    {
+        exit(state_);
+    }
+
+    state_ = it->second.execute(event, std::forward<Args2>(args)...);
+
+    if (stateChanges)
+    {
+        enter(state_);
+    }
+    --eventCount_;
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::enter(State state)
+{
+    auto it = entryActions_.find(state_);
+    if (it != entryActions_.end())
+    {
+        it->second();
+    }
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::exit(State state)
+{
+    auto it = exitActions_.find(state_);
+    if (it != exitActions_.end())
+    {
+        it->second();
+    }
+}
+
+// Machine::Transition
+template <typename ConcreteMachine, typename State>
+template <typename A, typename C, typename ...Args>
+StateMachine<ConcreteMachine, State>::Transition::Transition(
+        State current, EventFunc<Args...> event, State next,
+        std::shared_ptr<C> condition, std::shared_ptr<A> action,
+        bool isInternal)
+  : current_(current), event_(identify(event)), next_(next),
+    action_(std::shared_ptr<void>(action)),
+    condition_(std::shared_ptr<void>(condition)),
+    internal_(false)
+{
+}
+
+template <typename ConcreteMachine, typename State>
+bool StateMachine<ConcreteMachine, State>::Transition::changesState() const
+{
+    return !internal_;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+bool StateMachine<ConcreteMachine, State>::Transition::checkCondition(EventFunc<Args...>, Args2&&... args) const
+{
+    if (!condition_)
+    {
+        return true;
+    }
+
+    auto& condition = *std::static_pointer_cast<ConditionFunc<Args...>>(condition_);
+    if (condition)
+    {
+        return condition(std::forward<Args2>(args)...);
+    }
+    return true;
+}
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+State StateMachine<ConcreteMachine, State>::Transition::execute(EventFunc<Args...>, Args2&&... args) const
+{
+    if (current_ != next_)
+    {
+        std::cout << "State change: " << current_ << " -> " << next_ << std::endl;
+    }
+    else if (!internal_)
+    {
+        std::cout << "Re-entering state: " << current_ << std::endl;
+    }
+
+    if (action_)
+    {
+        auto& action = *std::static_pointer_cast<ActionFunc<Args...>>(action_);
+        if (action)
+        {
+            action(std::forward<Args2>(args)...);
+        }
+    }
+
+    return next_;
+}
+
+template <typename ConcreteMachine, typename State>
+bool StateMachine<ConcreteMachine, State>::Transition::operator<(const Transition& o) const
+{
+    if (current_ < o.current_)
+    {
+        return true;
+    }
+    else if (current_ == o.current_)
+    {
+        return event_ < o.event_;
+    }
+    return false;
+}
+
+template <typename ConcreteMachine, typename State>
+template <typename ...Args>
+int StateMachine<ConcreteMachine, State>::Transition::identify(EventFunc<Args...> event)
+{
+    static std::vector<std::pair<EventFunc<Args...>, int>> eventFunctions;
+    for (auto& f : eventFunctions)
+    {
+        if (f.first == event)
+        {
+            return f.second;
+        }
+    }
+
+    const int idx = getEventIndex();
+    eventFunctions.push_back(std::make_pair(event, idx));
+    return idx;
+}
+
+template <typename ConcreteMachine, typename State>
+int StateMachine<ConcreteMachine, State>::Transition::getEventIndex()
+{
+    static int idx = 0;
+    return idx++;
+}
+
+} // namespace Logic3
