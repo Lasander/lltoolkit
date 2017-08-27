@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cassert>
-#include <set>
+#include <iostream>
 #include <map>
 #include <queue>
-#include <iostream>
+#include <set>
 #include <tuple>
+#include <vector>
 
 namespace Logic {
 
@@ -29,6 +30,9 @@ namespace Logic {
 template <typename ConcreteMachine, typename State>
 class StateMachine
 {
+    /** Type for stored action/condition functions */
+    using StoredFunction = std::shared_ptr<void>;
+
 public:
     /** Construct a machine in initial @p state */
     StateMachine(State state);
@@ -130,8 +134,8 @@ public:
         State current_;
         State next_;
         EventFunc<Args...> event_;
-        std::shared_ptr<void> condition_;
-        std::shared_ptr<void> action_;
+        StoredFunction condition_;
+        StoredFunction action_;
         bool internal_;
     };
 
@@ -227,10 +231,10 @@ private:
     template <typename ...Args>
     using ConditionFunc = std::function<bool(Args...)>;
 
-    template<typename A, typename C, typename ...Args>
+    template<typename ...Args>
     void addTransition(
-        State current, EventFunc<Args...> event, State next,
-        std::shared_ptr<C> condition, std::shared_ptr<A> action,
+        State current, State next, EventFunc<Args...> event,
+        StoredFunction condition, StoredFunction action,
         bool internal);
 
     void addEntryAction(State state, std::function<void()> action);
@@ -260,8 +264,8 @@ private:
          * Construct new transition
          *
          * @param current Start state
-         * @param event Trigger event
          * @param next New state
+         * @param event Trigger event
          * @param condition Transition condition, nullptr for no condition
          * @param action Transition action, nullptr for no action
          * @param internal True if this is actually an internal action rather
@@ -270,10 +274,10 @@ private:
          *                 re-entered), but is most easily modeled as a
          *                 (custom) transition to self.
          */
-        template <typename A, typename C, typename ...Args>
+        template <typename ...Args>
         Transition(
-            State current, EventFunc<Args...> event, State next,
-            std::shared_ptr<C> condition, std::shared_ptr<A> action,
+            State current, State next, EventFunc<Args...> event,
+            StoredFunction condition, StoredFunction action,
             bool internal);
 
         ~Transition() = default;
@@ -298,18 +302,15 @@ private:
         template<typename ...Args, typename ...Args2>
         State execute(EventFunc<Args...> event, Args2&&... args) const;
 
+        /** Type for unique id for the transition (within this machine instance) */
         using Id = std::pair<State, int>;
 
-        Id getIdentifier() const
-        {
-            return std::make_pair(current_, event_);
-        }
+        /** @return unique id of this transition */
+        Id getIdentifier() const;
 
+        /** @return unique transition id based on state and event */
         template <typename ...Args>
-        static Id createIdentifier(State state, EventFunc<Args...> event)
-        {
-            return std::make_pair(state, identify(event));
-        }
+        static Id createIdentifier(State state, EventFunc<Args...> event);
 
         /**
          * @return true if this transition is "less-than" @p other
@@ -326,10 +327,10 @@ private:
         static int getEventIndex();
 
         State current_;
-        int event_;
         State next_;
-        std::shared_ptr<void> action_;
-        std::shared_ptr<void> condition_;
+        int event_;
+        StoredFunction action_;
+        StoredFunction condition_;
         bool internal_;
     };
 
@@ -485,7 +486,7 @@ template <typename ConcreteMachine, typename State>
 template<typename ...Args>
 StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::~TransitionBuilder()
 {
-    machine_.addTransition(current_, event_, next_, condition_, action_, internal_);
+    machine_.addTransition(current_, next_, event_, condition_, action_, internal_);
 }
 
 template <typename ConcreteMachine, typename State>
@@ -569,15 +570,15 @@ State StateMachine<ConcreteMachine, State>::getState() const
 }
 
 template <typename ConcreteMachine, typename State>
-template<typename A, typename C, typename ...Args>
+template<typename ...Args>
 void StateMachine<ConcreteMachine, State>::addTransition(
-    State current, EventFunc<Args...> event, State next,
-    std::shared_ptr<C> condition, std::shared_ptr<A> action,
+    State current, State next, EventFunc<Args...> event,
+    StoredFunction condition, StoredFunction action,
     bool internal)
 {
     transitions_.emplace(std::make_pair(
         Transition::createIdentifier(current, event),
-        Transition(current, event, next, condition, action, internal)));
+        Transition(current, next, event, condition, action, internal)));
 }
 
 template <typename ConcreteMachine, typename State>
@@ -668,14 +669,14 @@ void StateMachine<ConcreteMachine, State>::exit(State state)
 
 // Machine::Transition
 template <typename ConcreteMachine, typename State>
-template <typename A, typename C, typename ...Args>
+template <typename ...Args>
 StateMachine<ConcreteMachine, State>::Transition::Transition(
-        State current, EventFunc<Args...> event, State next,
-        std::shared_ptr<C> condition, std::shared_ptr<A> action,
+        State current, State next, EventFunc<Args...> event,
+        StoredFunction condition, StoredFunction action,
         bool isInternal)
-  : current_(current), event_(identify(event)), next_(next),
-    action_(std::shared_ptr<void>(action)),
-    condition_(std::shared_ptr<void>(condition)),
+  : current_(current), next_(next), event_(identify(event)),
+    action_(action),
+    condition_(condition),
     internal_(false)
 {
 }
@@ -726,6 +727,19 @@ State StateMachine<ConcreteMachine, State>::Transition::execute(EventFunc<Args..
     }
 
     return next_;
+}
+
+template <typename ConcreteMachine, typename State>
+auto StateMachine<ConcreteMachine, State>::Transition::getIdentifier() const -> Id
+{
+    return std::make_pair(current_, event_);
+}
+
+template <typename ConcreteMachine, typename State>
+template <typename ...Args>
+auto StateMachine<ConcreteMachine, State>::Transition::createIdentifier(State state, EventFunc<Args...> event) -> Id
+{
+    return std::make_pair(state, identify(event));
 }
 
 template <typename ConcreteMachine, typename State>
