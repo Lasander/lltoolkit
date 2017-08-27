@@ -2,10 +2,11 @@
 
 #include <cassert>
 #include <iostream>
-#include <map>
+#include <map> // for (ordered) multimap
 #include <queue>
 #include <set>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 namespace Logic {
@@ -341,7 +342,8 @@ private:
     using EntryExitActionFunc = std::function<void()>;
 
     /** Entry actions */
-    std::map<State, EntryExitActionFunc> entryActions_;
+    std::unordered_map<State, EntryExitActionFunc> entryActions_;
+
     /**
      * Keep track whether the initial state entry action (if any) has been executed.
      * The action will be executed when added provided that no event have been processed.
@@ -349,7 +351,7 @@ private:
     bool initialEntryExecuted_;
 
     /** Exit actions */
-    std::map<State, EntryExitActionFunc> exitActions_;
+    std::unordered_map<State, EntryExitActionFunc> exitActions_;
 
     /** Queued events */
     int eventCount_;
