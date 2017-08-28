@@ -51,6 +51,14 @@ public:
     using EventFunc = void(ConcreteMachine::*)(Args...);
 
     /**
+     * Explicitly enter the initial state executing any necessary (hierarchical) entry actions
+     *
+     * Should be called after the machine hierarchy and transactions have been defined.
+     * Will have an effect only on first call on each instance.
+     */
+    void enterInitialState();
+
+    /**
      * Handle @p event with @p args.
      *
      * Can be called directy of from the event functions in the ConcreteMachine. E.g.
@@ -220,6 +228,35 @@ public:
      */
     auto onExit(State state) -> EntryExitActionBuilder;
 
+    void setParent(State parent, const std::set<State>& children)
+    {
+        for (auto c : children)
+        {
+            setParent(parent, c);
+        }
+    }
+
+    void setParent(State parent, State child)
+    {
+        if (parent == child)
+        {
+            std::cerr << "Cannot set self as parent for state " << child << std::endl;
+            return;
+        }
+
+        const auto ancestors = getAncestors(parent);
+        for (auto a : ancestors)
+        {
+            if (a == child)
+            {
+                std::cerr << "Cannot create cyclic parent hierarchy for state " << child << " by setting " << parent << " as parent" << std::endl;
+                return;
+            }
+        }
+
+        parent_[child] = parent;
+    }
+
     /** @return current state */
     State getState() const;
 
@@ -252,6 +289,45 @@ private:
 
     /** Current state */
     State state_;
+    /** Parent states */
+    std::unordered_map<State, State> parent_;
+
+    std::vector<State> getAncestors(State state) const
+    {
+        std::vector<State> ancestors;
+        ancestors.push_back(state);
+
+        auto it = parent_.find(state);
+        while (it != parent_.end())
+        {
+            ancestors.push_back(it->second);
+            it = parent_.find(it->second);
+        }
+
+        return ancestors;
+    }
+
+    std::vector<State> getAncestorsUntilCommonAncestor(State state, State referenceState) const
+    {
+        const auto allAncestors = getAncestors(state);
+        const auto allReferenceAncestors = getAncestors(referenceState);
+
+        std::vector<State> ancestors;
+
+        for (auto a : allAncestors)
+        {
+            for (auto ra : allReferenceAncestors)
+            {
+                if (a == ra)
+                {
+                    return ancestors;
+                }
+            }
+            ancestors.push_back(a);
+        }
+
+        return ancestors;
+    }
 
     /**
      * Encapsulate a transition [current state + event -> next state + action]
@@ -291,6 +367,12 @@ private:
          *         be performed then executing this transition.
          */
         bool changesState() const;
+
+        State getNextState() const
+        {
+            return next_;
+        }
+
 
         /** @return transition condition result for @p event with @p args */
         template<typename ...Args, typename ...Args2>
@@ -346,7 +428,8 @@ private:
 
     /**
      * Keep track whether the initial state entry action (if any) has been executed.
-     * The action will be executed when added provided that no event have been processed.
+     * The action will be executed (once) when explicitly invoked (@see enterInitialState)
+     * or on first event to the machine.
      */
     bool initialEntryExecuted_;
 
@@ -361,6 +444,7 @@ private:
 template <typename ConcreteMachine, typename State>
 StateMachine<ConcreteMachine, State>::StateMachine(State state)
   : state_(state),
+    parent_(),
     transitions_(),
     entryActions_(),
     initialEntryExecuted_(false),
@@ -368,6 +452,21 @@ StateMachine<ConcreteMachine, State>::StateMachine(State state)
     eventCount_(),
     events_()
 {
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::enterInitialState()
+{
+    if (!initialEntryExecuted_)
+    {
+        initialEntryExecuted_ = true;
+
+        const auto newAncestors = getAncestors(state_);
+        for (auto it = newAncestors.rbegin(); it != newAncestors.rend(); ++it)
+        {
+            enter(*it);
+        }
+    }
 }
 
 // Implement std::apply from c++17 using c++14
@@ -391,8 +490,10 @@ template <typename ConcreteMachine, typename State>
 template<typename ...Args, typename ...Args2>
 void StateMachine<ConcreteMachine, State>::handle(EventFunc<Args...> event, Args2&&... args)
 {
-    // Initial entry cannot be executed after events
-    initialEntryExecuted_ = true;
+    if (!initialEntryExecuted_)
+    {
+        enterInitialState();
+    }
 
     if (++eventCount_ > 1)
     {
@@ -590,13 +691,6 @@ void StateMachine<ConcreteMachine, State>::addEntryAction(State state, std::func
     {
         std::cerr << "duplicate entry action for state " << state << std::endl;
     }
-
-    // If this an entry action for the initial state execute it
-    if (!initialEntryExecuted_ && state == state_)
-    {
-        initialEntryExecuted_ = true;
-        enter(state);
-    }
 }
 
 template <typename ConcreteMachine, typename State>
@@ -607,7 +701,6 @@ void StateMachine<ConcreteMachine, State>::addExitAction(State state, std::funct
         std::cerr << "duplicate exit action for state " << state << std::endl;
     }
 }
-
 
 template <typename ConcreteMachine, typename State>
 template<typename ...Args, typename ...Args2>
@@ -635,16 +728,27 @@ void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Arg
     }
 
     const bool stateChanges = it->second.changesState();
+    const State previousState = state_;
+    const State nextState = it->second.getNextState();
+
     if (stateChanges)
     {
-        exit(state_);
+        const auto oldAncestors = getAncestorsUntilCommonAncestor(state_, nextState);
+        for (auto a : oldAncestors)
+        {
+            exit(a);
+        }
     }
 
     state_ = it->second.execute(event, std::forward<Args2>(args)...);
 
     if (stateChanges)
     {
-        enter(state_);
+        const auto newAncestors = getAncestorsUntilCommonAncestor(state_, previousState);
+        for (auto it = newAncestors.rbegin(); it != newAncestors.rend(); ++it)
+        {
+            enter(*it);
+        }
     }
     --eventCount_;
 }
@@ -652,7 +756,7 @@ void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Arg
 template <typename ConcreteMachine, typename State>
 void StateMachine<ConcreteMachine, State>::enter(State state)
 {
-    auto it = entryActions_.find(state_);
+    auto it = entryActions_.find(state);
     if (it != entryActions_.end())
     {
         it->second();
@@ -662,7 +766,7 @@ void StateMachine<ConcreteMachine, State>::enter(State state)
 template <typename ConcreteMachine, typename State>
 void StateMachine<ConcreteMachine, State>::exit(State state)
 {
-    auto it = exitActions_.find(state_);
+    auto it = exitActions_.find(state);
     if (it != exitActions_.end())
     {
         it->second();
