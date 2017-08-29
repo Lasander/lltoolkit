@@ -42,7 +42,7 @@ public:
     /**
      * Event function type:
      * - a member function of the ConcreteMachine,
-     * - taking arbitratry parameters, and
+     * - taking arbitrary parameters, and
      * - returning void
      *
      * @see handle
@@ -679,6 +679,12 @@ void StateMachine<ConcreteMachine, State>::addTransition(
     StoredFunction condition, StoredFunction action,
     bool internal)
 {
+    if (initialEntryExecuted_)
+    {
+        std::cerr << "Trying to add transitions after initial state entered" << std::endl;
+        return;
+    }
+
     transitions_.emplace(std::make_pair(
         Transition::createIdentifier(current, event),
         Transition(current, next, event, condition, action, internal)));
@@ -687,6 +693,12 @@ void StateMachine<ConcreteMachine, State>::addTransition(
 template <typename ConcreteMachine, typename State>
 void StateMachine<ConcreteMachine, State>::addEntryAction(State state, std::function<void()> action)
 {
+    if (initialEntryExecuted_)
+    {
+        std::cerr << "Trying to add entry action after initial state entered" << std::endl;
+        return;
+    }
+
     if (!entryActions_.emplace(state, action).second)
     {
         std::cerr << "duplicate entry action for state " << state << std::endl;
@@ -696,6 +708,12 @@ void StateMachine<ConcreteMachine, State>::addEntryAction(State state, std::func
 template <typename ConcreteMachine, typename State>
 void StateMachine<ConcreteMachine, State>::addExitAction(State state, std::function<void()> action)
 {
+    if (initialEntryExecuted_)
+    {
+        std::cerr << "Trying to add exit action after initial state entered" << std::endl;
+        return;
+    }
+
     if (!exitActions_.emplace(state, action).second)
     {
         std::cerr << "duplicate exit action for state " << state << std::endl;
