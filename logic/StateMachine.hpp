@@ -22,6 +22,7 @@ namespace Logic {
  * - Guard conditions on transitions
  * - Transition actions
  * - State entry/exit actions
+ * - State hierarchy
  * - Recursive events (event calls resulting from actions)
  *     - Recursive calls are queued and handled after completing
  *       the handling of the current event
@@ -228,34 +229,11 @@ public:
      */
     auto onExit(State state) -> EntryExitActionBuilder;
 
-    void setParent(State parent, const std::set<State>& children)
-    {
-        for (auto c : children)
-        {
-            setParent(parent, c);
-        }
-    }
+    /** Set @p parent state for @p children */
+    void setParent(State parent, const std::set<State>& children);
 
-    void setParent(State parent, State child)
-    {
-        if (parent == child)
-        {
-            std::cerr << "Cannot set self as parent for state " << child << std::endl;
-            return;
-        }
-
-        const auto ancestors = getAncestors(parent);
-        for (auto a : ancestors)
-        {
-            if (a == child)
-            {
-                std::cerr << "Cannot create cyclic parent hierarchy for state " << child << " by setting " << parent << " as parent" << std::endl;
-                return;
-            }
-        }
-
-        parent_[child] = parent;
-    }
+    /** Set @p parent state for single @p child */
+    void setParent(State parent, State child);
 
     /** @return current state */
     State getState() const;
@@ -265,7 +243,7 @@ private:
     template <typename ...Args>
     using ActionFunc = std::function<void(Args...)>;
 
-    /** Conditon function type */
+    /** Condition function type */
     template <typename ...Args>
     using ConditionFunc = std::function<bool(Args...)>;
 
@@ -292,42 +270,21 @@ private:
     /** Parent states */
     std::unordered_map<State, State> parent_;
 
-    std::vector<State> getAncestors(State state) const
-    {
-        std::vector<State> ancestors;
-        ancestors.push_back(state);
+    /**
+     * @return all ancestors of @p state including state itself
+     *
+     * I.e. state -> parent of state -> parent of parent of state -> ...
+     */
+    std::vector<State> getAncestors(State state) const;
 
-        auto it = parent_.find(state);
-        while (it != parent_.end())
-        {
-            ancestors.push_back(it->second);
-            it = parent_.find(it->second);
-        }
-
-        return ancestors;
-    }
-
-    std::vector<State> getAncestorsUntilCommonAncestor(State state, State referenceState) const
-    {
-        const auto allAncestors = getAncestors(state);
-        const auto allReferenceAncestors = getAncestors(referenceState);
-
-        std::vector<State> ancestors;
-
-        for (auto a : allAncestors)
-        {
-            for (auto ra : allReferenceAncestors)
-            {
-                if (a == ra)
-                {
-                    return ancestors;
-                }
-            }
-            ancestors.push_back(a);
-        }
-
-        return ancestors;
-    }
+    /**
+     * @return ancestors of @p state including state itself up to, but
+     *         excluding, first common ancestor with @p referenceState
+     *
+     * E.g. if state A ancestors are B -> C and referenceState ancestors
+     * are C -> D, the return value will be (A, B).
+     */
+    std::vector<State> getAncestorsUntilCommonAncestor(State state, State referenceState) const;
 
     /**
      * Encapsulate a transition [current state + event -> next state + action]
@@ -418,7 +375,18 @@ private:
     };
 
     /** Registered transitions */
-    std::multimap<typename Transition::Id, const Transition> transitions_;
+    using TransitionContainer = std::multimap<typename Transition::Id, const Transition>;
+    TransitionContainer transitions_;
+
+    /**
+     * Find transition for @p event with @p args in the current state
+     *
+     * Will consider state ancestors to handle the event if necessary.
+     *
+     * @return iterator to transitions_ pointing to found transition or to end() if transition was not found.
+     */
+    template<typename ...Args, typename ...Args2>
+    auto findTransition(EventFunc<Args...> event, Args2&&... args) -> typename TransitionContainer::iterator;
 
     /** Entry and exit action function type */
     using EntryExitActionFunc = std::function<void()>;
@@ -667,6 +635,43 @@ auto StateMachine<ConcreteMachine, State>::onExit(State state) -> EntryExitActio
 }
 
 template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::setParent(State parent, const std::set<State>& children)
+{
+    for (auto c : children)
+    {
+        setParent(parent, c);
+    }
+}
+
+template <typename ConcreteMachine, typename State>
+void StateMachine<ConcreteMachine, State>::setParent(State parent, State child)
+{
+    if (parent == child)
+    {
+        std::cerr << "Cannot set self as parent for state " << child << std::endl;
+        return;
+    }
+
+    const auto ancestors = getAncestors(parent);
+    for (auto a : ancestors)
+    {
+        if (a == child)
+        {
+            std::cerr << "Cannot create cyclic parent hierarchy for state " << child << " by setting " << parent << " as parent" << std::endl;
+            return;
+        }
+    }
+
+    if (parent_.find(child) != parent_.end())
+    {
+        std::cerr << "Cannot set parent " << parent << " for state " << child << " as it already has parent " << parent_[child] << std::endl;
+        return;
+    }
+
+    parent_[child] = parent;
+}
+
+template <typename ConcreteMachine, typename State>
 State StateMachine<ConcreteMachine, State>::getState() const
 {
     return state_;
@@ -724,20 +729,8 @@ template <typename ConcreteMachine, typename State>
 template<typename ...Args, typename ...Args2>
 void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Args2&&... args)
 {
-    auto range = transitions_.equal_range(Transition::createIdentifier(state_, event));
-    auto it = range.first;
-
-    bool found = false;
-    for (; it != range.second; ++it)
-    {
-        if (it->second.checkCondition(event, std::forward<Args2>(args)...))
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
+    auto transitionIt = findTransition(event, std::forward<Args2>(args)...);
+    if (transitionIt == transitions_.end())
     {
         // Unhandled event
         std::cerr << "Unhandled event " << typeid(event).name() << " in state " << state_ << std::endl;
@@ -745,9 +738,10 @@ void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Arg
         return;
     }
 
-    const bool stateChanges = it->second.changesState();
+    const Transition& transition = transitionIt->second;
+    const bool stateChanges = transition.changesState();
     const State previousState = state_;
-    const State nextState = it->second.getNextState();
+    const State nextState = transition.getNextState();
 
     if (stateChanges)
     {
@@ -758,7 +752,7 @@ void StateMachine<ConcreteMachine, State>::execute(EventFunc<Args...> event, Arg
         }
     }
 
-    state_ = it->second.execute(event, std::forward<Args2>(args)...);
+    state_ = transition.execute(event, std::forward<Args2>(args)...);
 
     if (stateChanges)
     {
@@ -790,6 +784,47 @@ void StateMachine<ConcreteMachine, State>::exit(State state)
         it->second();
     }
 }
+
+
+template <typename ConcreteMachine, typename State>
+std::vector<State> StateMachine<ConcreteMachine, State>::getAncestors(State state) const
+{
+    std::vector<State> ancestors;
+    ancestors.push_back(state);
+
+    auto it = parent_.find(state);
+    while (it != parent_.end())
+    {
+        ancestors.push_back(it->second);
+        it = parent_.find(it->second);
+    }
+
+    return ancestors;
+}
+
+template <typename ConcreteMachine, typename State>
+std::vector<State> StateMachine<ConcreteMachine, State>::getAncestorsUntilCommonAncestor(State state, State referenceState) const
+{
+    const auto allAncestors = getAncestors(state);
+    const auto allReferenceAncestors = getAncestors(referenceState);
+
+    std::vector<State> ancestors;
+
+    for (auto a : allAncestors)
+    {
+        for (auto ra : allReferenceAncestors)
+        {
+            if (a == ra)
+            {
+                return ancestors;
+            }
+        }
+        ancestors.push_back(a);
+    }
+
+    return ancestors;
+}
+
 
 // Machine::Transition
 template <typename ConcreteMachine, typename State>
@@ -903,6 +938,27 @@ int StateMachine<ConcreteMachine, State>::Transition::getEventIndex()
 {
     static int idx = 0;
     return idx++;
+}
+
+
+template <typename ConcreteMachine, typename State>
+template<typename ...Args, typename ...Args2>
+auto StateMachine<ConcreteMachine, State>::findTransition(EventFunc<Args...> event, Args2&&... args) -> typename TransitionContainer::iterator
+{
+    for (auto a : getAncestors(state_))
+    {
+        auto range = transitions_.equal_range(Transition::createIdentifier(a, event));
+        auto it = range.first;
+        for (; it != range.second; ++it)
+        {
+            if (it->second.checkCondition(event, std::forward<Args2>(args)...))
+            {
+                return it;
+            }
+        }
+    }
+
+    return transitions_.end();
 }
 
 } // namespace Logic
