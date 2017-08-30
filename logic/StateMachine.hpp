@@ -877,15 +877,6 @@ template <typename ConcreteMachine, typename State>
 template<typename ...Args, typename ...Args2>
 State StateMachine<ConcreteMachine, State>::Transition::execute(EventFunc<Args...>, Args2&&... args) const
 {
-    if (current_ != next_)
-    {
-        std::cout << "State change: " << current_ << " -> " << next_ << std::endl;
-    }
-    else if (!internal_)
-    {
-        std::cout << "Re-entering state: " << current_ << std::endl;
-    }
-
     if (action_)
     {
         auto& action = *std::static_pointer_cast<ActionFunc<Args...>>(action_);
