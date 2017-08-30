@@ -512,7 +512,7 @@ template<typename ...Args>
 template<typename T, typename R>
 auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(T& obj, R(T::*function)(Args...)) -> TransitionBuilder&
 {
-    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args...>(args...)); };
+    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args>(args)...); };
     condition_ = std::make_shared<ActionFunc<Args...>>(f);
     return *this;
 }
@@ -522,7 +522,7 @@ template<typename ...Args>
 template<typename T, typename R>
 auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(const T& obj, R(T::*function)(Args...) const) -> TransitionBuilder&
 {
-    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args...>(args...)); };
+    auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args>(args)...); };
     condition_ = std::make_shared<ActionFunc<Args...>>(f);
     return *this;
 }
@@ -540,7 +540,7 @@ template<typename ...Args>
 template<typename T, typename R>
 void StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::invoke(T& obj, R(T::*function)(Args...))
 {
-    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args...>(args...)); };
+    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args>(args)...); };
     action_ = std::make_shared<ActionFunc<Args...>>(f);
 }
 
@@ -549,7 +549,7 @@ template<typename ...Args>
 template<typename T, typename R>
 void StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::invoke(const T& obj, R(T::*function)(Args...) const)
 {
-    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args...>(args...)); };
+    auto f = [&obj, function](Args... args){ (obj.*function)(std::forward<Args>(args)...); };
     action_ = std::make_shared<ActionFunc<Args...>>(f);
 }
 
