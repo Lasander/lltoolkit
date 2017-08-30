@@ -1,296 +1,580 @@
-/**
- * Test_StateMachine.cpp
- *
- *  Created on: Apr 28, 2015
- *      Author: lasse
- */
-
 #include "../../common/TypeHelpers.hpp"
+#include "../../common/unittest/LogHelpers.hpp"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
 #include <string>
 #include <iostream>
 #include <map>
 #include <iomanip>
-#include <future>
 #include "../StateMachine.hpp"
+
+using namespace testing;
 
 namespace Logic {
 namespace {
 
-class Param
+class MockMachine
 {
 public:
-    explicit Param(int i) : i_(i)
+    MockMachine()
+      : impl_(A21)
     {
-        std::cout << "ctor: " << i_ << std::endl;
+        impl_.onEntry(A).invoke(*this, &MockMachine::A_Entry);
+        impl_.onExit(A).invoke(*this, &MockMachine::A_Exit);
+        impl_.onEntry(A1).invoke(*this, &MockMachine::A1_Entry);
+        impl_.onExit(A1).invoke(*this, &MockMachine::A1_Exit);
+        impl_.onEntry(A2).invoke(*this, &MockMachine::A2_Entry);
+        impl_.onExit(A2).invoke(*this, &MockMachine::A2_Exit);
+        impl_.onEntry(A21).invoke(*this, &MockMachine::A21_Entry);
+        impl_.onExit(A21).invoke(*this, &MockMachine::A21_Exit);
+        impl_.onEntry(B).invoke(*this, &MockMachine::B_Entry);
+        impl_.onExit(B).invoke(*this, &MockMachine::B_Exit);
+        impl_.onEntry(B1).invoke(*this, &MockMachine::B1_Entry);
+        impl_.onExit(B1).invoke(*this, &MockMachine::B1_Exit);
+        impl_.onEntry(C).invoke(*this, &MockMachine::C_Entry);
+        impl_.onExit(C).invoke(*this, &MockMachine::C_Exit);
+        impl_.onEntry(C1).invoke(*this, &MockMachine::C1_Entry);
+        impl_.onExit(C1).invoke(*this, &MockMachine::C1_Exit);
+
+        // Define state hierarchy
+        impl_.setParent(A, {A1, A2});
+        impl_.setParent(A2, A21);
+        impl_.setParent(B, B1);
+        impl_.setParent(C, C1);
+
+
+        using MemberFn = void(MockMachine::*)();
+        MemberFn to_Events[] =
+        {
+            &MockMachine::to_A,
+            &MockMachine::to_A1,
+            &MockMachine::to_A2,
+            &MockMachine::to_A21,
+            &MockMachine::to_B,
+            &MockMachine::to_B1
+        };
+
+        // Define all transitions between states from A to B1
+        for (int i = A; i <= B1 ; ++i)
+        {
+            State from = static_cast<State>(i);
+            for (int j = A; j <= B1 ; ++j)
+            {
+                State to = static_cast<State>(j);
+                impl_.onTransition(from, to, to_Events[j]).invoke(*this, &MockMachine::AB_action);
+            }
+            // Internal action
+            impl_.onTransition(from, &MockMachine::to_self).invoke(*this, &MockMachine::internalAction);
+        }
+
+        impl_.onTransition(B1, C1, &MockMachine::from_B1_to_C1_with_move).invoke(*this, &MockMachine::C1_action_with_move_);
+        impl_.onTransition(B1, C1, &MockMachine::from_B1_to_C1).invoke(*this, &MockMachine::C1_action);
+
+        impl_.onTransition(A1, C1, &MockMachine::from_A1_to_C1_with_condition).when(*this, &MockMachine::A1_C1_condition);
+        impl_.onTransition(A1, C1, &MockMachine::from_A1_to_C1_with_condition).when(*this, &MockMachine::A1_C1_condition_2);
+        impl_.onTransition(A, C1, &MockMachine::from_A1_to_C1_with_condition).when(*this, &MockMachine::A_C1_condition);
+        impl_.onTransition(C1, &MockMachine::to_self).invoke(*this, &MockMachine::internalAction);
     }
 
-    ~Param()
-    {
-        std::cout << "dtor: " << i_ << std::endl;
-        i_ = -i_;
-    }
+    MOCK_METHOD0(A_Entry, void());
+    MOCK_METHOD0(A_Exit, void());
+    MOCK_METHOD0(A1_Entry, void());
+    MOCK_METHOD0(A1_Exit, void());
+    MOCK_METHOD0(A2_Entry, void());
+    MOCK_METHOD0(A2_Exit, void());
+    MOCK_METHOD0(A21_Entry, void());
+    MOCK_METHOD0(A21_Exit, void());
+    MOCK_METHOD0(B_Entry, void());
+    MOCK_METHOD0(B_Exit, void());
+    MOCK_METHOD0(B1_Entry, void());
+    MOCK_METHOD0(B1_Exit, void());
+    MOCK_METHOD0(C_Entry, void());
+    MOCK_METHOD0(C_Exit, void());
+    MOCK_METHOD0(C1_Entry, void());
+    MOCK_METHOD0(C1_Exit, void());
+    MOCK_METHOD0(internalAction, void());
 
-    Param(const Param& o)
-      : i_(o.i_)
-    {
-        std::cout << "copy: " << i_ << std::endl;
-    }
+    MOCK_METHOD0(AB_action, void());
 
-    Param& operator==(const Param& o)
-    {
-        i_ = o.i_;
-        std::cout << "copy assignment: " << i_ << std::endl;
-        return *this;
-    }
+    void C1_action_with_move_(std::unique_ptr<int> i) { C1_action_with_move(i); }
+    MOCK_METHOD1(C1_action_with_move, void(const std::unique_ptr<int>& i));
+    MOCK_METHOD1(C1_action, void(int i));
 
-    Param(Param&& o)
-      : i_(o.i_)
-    {
-        o.i_ = -o.i_;
-        std::cout << "move: " << i_ << std::endl;
-    }
-    Param& operator==(Param&& o)
-    {
-        i_ = o.i_;
-        o.i_ = -o.i_;
-        std::cout << "move assignment: " << i_ << std::endl;
-        return *this;
-    }
-
-    int i_;
-};
-
-class MoveOnlyParam
-{
-public:
-    explicit MoveOnlyParam(int i) : i_(i)
-    {
-        std::cout << "ctor: " << i_ << std::endl;
-    }
-
-    ~MoveOnlyParam()
-    {
-        std::cout << "dtor: " << i_ << std::endl;
-        i_ = -i_;
-    }
-
-    MoveOnlyParam(const MoveOnlyParam&) = delete;
-    MoveOnlyParam& operator==(const MoveOnlyParam&) = delete;
-
-    MoveOnlyParam(MoveOnlyParam&& o)
-      : i_(o.i_)
-    {
-        o.i_ = -o.i_;
-        std::cout << "move: " << i_ << std::endl;
-    }
-    MoveOnlyParam& operator==(MoveOnlyParam&& o)
-    {
-        i_ = o.i_;
-        o.i_ = -o.i_;
-        std::cout << "move assignment: " << i_ << std::endl;
-        return *this;
-    }
-
-    int i_;
-};
-
-
-enum MyState
-{
-    A,
-    B,
-    C
-};
-
-class MyMachine : private StateMachine<MyMachine, MyState>
-{
-public:
-    MyMachine()
-      : StateMachine<MyMachine, MyState>(A)
-    {
-        onTransition(A, B, &MyMachine::first).invoke([](int i) { std::cout << "A->B(" << i << ")" << std::endl; });
-        onTransition(B, A, &MyMachine::first).invoke([](int i) { std::cout << "B->A(" << i << ")" << std::endl; });
-        onTransition(A, C, &MyMachine::second);
-        onTransition(C, A, &MyMachine::first);
-        onTransition(A, A, &MyMachine::test1).invoke([](const Param& p) { std::cout << "test1(" << p.i_ << ")" << std::endl; });
-        onTransition(A, A, &MyMachine::test2).invoke([](const MoveOnlyParam& p) { std::cout << "test2(" << p.i_ << ")" << std::endl; });
-    }
-
-    ~MyMachine()
-    {
-    }
-
-    void first(int i) { handle(&MyMachine::first, i); };
-    void second() { handle(&MyMachine::second); };
-    void test1(const Param& p) { handle(&MyMachine::test1, p); };
-    void test2(MoveOnlyParam&& p) { handle(&MyMachine::test2, std::move(p)); };
-};
-
-class MyMachine2
-{
-public:
-    MyMachine2()
-      : impl_(A)
-    {
-        impl_.onTransition(A, B, &MyMachine2::first).invoke([](int i) { std::cout << "A->B(" << i << ")" << std::endl; });
-        impl_.onTransition(B, A, &MyMachine2::first).invoke([](int i) { std::cout << "B->A(" << i << ")" << std::endl; });
-        impl_.onTransition(A, C, &MyMachine2::second);
-        impl_.onTransition(C, A, &MyMachine2::first);
-        impl_.onTransition(A, A, &MyMachine2::test1).invoke([](const Param& p) { std::cout << "test1(" << p.i_ << ")" << std::endl; });
-        impl_.onTransition(A, A, &MyMachine2::test2).invoke([](const MoveOnlyParam& p) { std::cout << "test2(" << p.i_ << ")" << std::endl; });
-
-        impl_.onEntry(A).invoke([]{ std::cout << "Enter A" << std::endl; });
-        impl_.onExit(A).invoke([]{ std::cout << "Exit A" << std::endl; });
-        impl_.onEntry(C).invoke([]{ std::cout << "Enter C" << std::endl; });
-        impl_.onExit(C).invoke([]{ std::cout << "Exit C" << std::endl; });
-
-        impl_.onTransition(C, &MyMachine2::second).invoke([]{ std::cout << "Staying in C" << std::endl; });
-    }
+    MOCK_CONST_METHOD0(A1_C1_condition, bool());
+    MOCK_CONST_METHOD0(A1_C1_condition_2, bool());
+    MOCK_CONST_METHOD0(A_C1_condition, bool());
 
     enum State
     {
         A,
+        A1,
+        A2,
+        A21,
         B,
-        C
+        B1,
+        C,
+        C1
     };
 
-    void first(int i) { impl_(&MyMachine2::first, i); };
-    void second() { impl_(&MyMachine2::second); };
-    void test1(const Param& p) { impl_(&MyMachine2::test1, p); };
-    void test2(MoveOnlyParam&& p) { impl_(&MyMachine2::test2, std::move(p)); };
+    void to_A() { impl_(_to_A); }
+    void to_A1() { impl_(&MockMachine::to_A1); }
+    void to_A2() { impl_(&MockMachine::to_A2); }
+    void to_A21() { impl_(&MockMachine::to_A21); }
+    void to_B() { impl_(&MockMachine::to_B); }
+    void to_B1() { impl_(&MockMachine::to_B1); }
+    void to_self() { impl_(&MockMachine::to_self); }
+
+    void from_A1_to_C1_with_condition() { impl_(&MockMachine::from_A1_to_C1_with_condition); }
+
+    void from_B1_to_C1(int i) { impl_(&MockMachine::from_B1_to_C1, i); }
+    void from_B1_to_C1_with_move(std::unique_ptr<int> i) { impl_(&MockMachine::from_B1_to_C1_with_move, std::move(i)); }
+
+
+    void enterInitialState() { impl_.enterInitialState(); }
+    State getState() const { return impl_.getState(); }
+
+    static constexpr const auto _to_A = &MockMachine::to_A;
 
 private:
-    StateMachine<MyMachine2, State> impl_;
+    StateMachine<MockMachine, State> impl_;
+};
+
+class MockMachineTest : public Test
+{
+protected:
+    void SetUp() override
+    {
+    }
+
+    void TearDown() override
+    {
+    }
+
+    void verifyExpectations()
+    {
+        Mock::VerifyAndClearExpectations(&m);
+    }
+
+    StrictMock<MockMachine> m;
+};
+
+class InitializedMockMachineTest : public MockMachineTest
+{
+protected:
+    void SetUp() override
+    {
+        MockMachineTest::SetUp();
+
+        // Expect entry to initial state
+        InSequence sequence;
+        EXPECT_CALL(m, A_Entry());
+        EXPECT_CALL(m, A2_Entry());
+        EXPECT_CALL(m, A21_Entry());
+
+        // When
+        m.enterInitialState();
+
+        // Then
+        verifyExpectations();
+        EXPECT_EQ(MockMachine::A21, m.getState());
+    }
+
+    void inA1()
+    {
+        // Given
+        EXPECT_EQ(MockMachine::A21, m.getState());
+
+        // Expect
+        EXPECT_CALL(m, A21_Exit());
+        EXPECT_CALL(m, A2_Exit());
+        EXPECT_CALL(m, AB_action());
+        EXPECT_CALL(m, A1_Entry());
+
+        // When
+        m.to_A1();
+
+        // Then
+        verifyExpectations();
+        EXPECT_EQ(MockMachine::A1, m.getState());
+    }
+
+    void inB1()
+    {
+        // Given
+        EXPECT_EQ(MockMachine::A21, m.getState());
+
+        // Expect
+        EXPECT_CALL(m, A21_Exit());
+        EXPECT_CALL(m, A2_Exit());
+        EXPECT_CALL(m, A_Exit());
+        EXPECT_CALL(m, AB_action());
+        EXPECT_CALL(m, B_Entry());
+        EXPECT_CALL(m, B1_Entry());
+
+        // When
+        m.to_B1();
+
+        // Then
+        verifyExpectations();
+        EXPECT_EQ(MockMachine::B1, m.getState());
+    }
 };
 
 } // anonymous namespace
 
-TEST(StateMachineTest, simple)
+TEST_F(MockMachineTest, initialEntry)
 {
-    MyMachine m;
-    m.second();
-    m.first(1);
-    m.first(2);
-    m.first(3);
+    // Expect entry to initial state
+    InSequence sequence;
+    EXPECT_CALL(m, A_Entry());
+    EXPECT_CALL(m, A2_Entry());
+    EXPECT_CALL(m, A21_Entry());
 
-    m.test1(Param(1));
-    MoveOnlyParam p2(2);
-    m.test2(std::move(p2));
+    // When
+    m.enterInitialState();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A21, m.getState());
 }
 
-TEST(StateMachineTest, simple2)
+TEST_F(MockMachineTest, initialEntryWithInternalAction)
 {
-    MyMachine2 m;
-    m.second();
-    m.second();
-    m.first(1);
-    m.first(2);
-    m.first(3);
+    // Expect entry to initial state
+    InSequence sequence;
+    EXPECT_CALL(m, A_Entry());
+    EXPECT_CALL(m, A2_Entry());
+    EXPECT_CALL(m, A21_Entry());
+    // And internal action
+    EXPECT_CALL(m, internalAction());
 
-    m.test1(Param(1));
-    m.test2(MoveOnlyParam(2));
+    // When internal action as the first event
+    m.to_self();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A21, m.getState());
 }
 
-TEST(StateMachineTest, simpleExternal)
+TEST_F(MockMachineTest, initialEntryWithTransitionEvent)
 {
-    StateMachine<MyMachine, MyState> m(A);
-    m.onTransition(A, B, &MyMachine::first).invoke([](int i) { std::cout << "A->B(" << i << ")" << std::endl; });
-    m.onTransition(B, A, &MyMachine::first).invoke([](int i) { std::cout << "B->A(" << i << ")" << std::endl; });
-    m.onTransition(A, C, &MyMachine::second);
-    m.onTransition(C, A, &MyMachine::first);
-    m.onTransition(A, A, &MyMachine::test1).invoke([](const Param& p) { std::cout << "test1(" << p.i_ << ")" << std::endl; });
-    m.onTransition(A, A, &MyMachine::test2).invoke([](const MoveOnlyParam& p) { std::cout << "test2(" << p.i_ << ")" << std::endl; });
+    // Expect entry to initial state
+    InSequence sequence;
+    EXPECT_CALL(m, A_Entry());
+    EXPECT_CALL(m, A2_Entry());
+    EXPECT_CALL(m, A21_Entry());
+    // And transition
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, AB_action());
+    EXPECT_CALL(m, B_Entry());
+    EXPECT_CALL(m, B1_Entry());
 
-    m(&MyMachine::second);
-    m(&MyMachine::first, 1);
-    m(&MyMachine::first, 2);
-    m(&MyMachine::first, 3);
-    m(&MyMachine::test1, Param(1));
-    m(&MyMachine::test2, MoveOnlyParam(2));
+    // When handling first event
+    m.to_B1();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::B1, m.getState());
 }
 
-TEST(StateMachineTest, conditionalTransition)
+TEST_F(InitializedMockMachineTest, simpleTransition)
 {
-    StateMachine<MyMachine, MyState> m(A);
-    m.onTransition(A, A, &MyMachine::first)
-            .when([](int i) { return i == 2; })
-            .invoke([](int i) { std::cout << "i == 2 first(" << i << ")" << std::endl; });
-    m.onTransition(A, A, &MyMachine::first)
-            .when([](int i) { return i > 1; })
-            .invoke([](int i) { std::cout << "i > 1 first(" << i << ")" << std::endl; });
-    m.onTransition(A, A, &MyMachine::first)
-            .invoke([](int i) { std::cout << "unconditional first(" << i << ")" << std::endl; });
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, AB_action());
+    EXPECT_CALL(m, B_Entry());
+    EXPECT_CALL(m, B1_Entry());
 
-    m(&MyMachine::first, 1);
-    m(&MyMachine::first, 2);
-    m(&MyMachine::first, 3);
+    // When handling event
+    m.to_B1();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::B1, m.getState());
 }
 
-TEST(StateMachineTest, test)
+TEST_F(InitializedMockMachineTest, transitionToSelf)
 {
-    using EventFunc = void(MyMachine::*)(int);
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, AB_action());
+    EXPECT_CALL(m, A21_Entry());
 
+    // When
+    m.to_A21();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A21, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionToParent)
+{
+    // Expect
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, AB_action());
+
+    // When
+    m.to_A2();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A2, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionToGrandParent)
+{
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, AB_action());
+
+    // When
+    m.to_A();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionToSibling)
+{
+    // Given in A2
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, AB_action());
+    m.to_A2();
+    verifyExpectations();
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, AB_action());
+    EXPECT_CALL(m, A1_Entry());
+
+    // When transit to A1
+    m.to_A1();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithAction)
+{
+    // Given
+    inB1();
+    const int data = 5;
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, B1_Exit());
+    EXPECT_CALL(m, B_Exit());
+    EXPECT_CALL(m, C1_action(data));
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+
+    // When
+    m.from_B1_to_C1(data);
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithActionWithMove)
+{
+    // Given
+    inB1();
+    const int data = 5;
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, B1_Exit());
+    EXPECT_CALL(m, B_Exit());
+    EXPECT_CALL(m, C1_action_with_move(_)).WillOnce(Invoke([data](const std::unique_ptr<int>& i){ EXPECT_EQ(data, *i); }));
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+
+    // When
+    m.from_B1_to_C1_with_move(std::make_unique<int>(data));
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithTrueCondition)
+{
+    // Given
+    inA1();
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A1_C1_condition()).WillOnce(Return(true));
+    EXPECT_CALL(m, A1_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+
+    // When
+    m.from_A1_to_C1_with_condition();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithSecondaryCondition)
+{
+    // Given
+    inA1();
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A1_C1_condition()).WillOnce(Return(false));
+    EXPECT_CALL(m, A1_C1_condition_2()).WillOnce(Return(true));
+    EXPECT_CALL(m, A1_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+
+    // When
+    m.from_A1_to_C1_with_condition();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithParentFallback)
+{
+    // Given
+    inA1();
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A1_C1_condition()).WillOnce(Return(false));
+    EXPECT_CALL(m, A1_C1_condition_2()).WillOnce(Return(false));
+    EXPECT_CALL(m, A_C1_condition()).WillOnce(Return(true));
+    EXPECT_CALL(m, A1_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+
+    // When
+    m.from_A1_to_C1_with_condition();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithParentFallbackWithFalseCondition)
+{
+    // Given
+    inA1();
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A1_C1_condition()).WillOnce(Return(false));
+    EXPECT_CALL(m, A1_C1_condition_2()).WillOnce(Return(false));
+    EXPECT_CALL(m, A_C1_condition()).WillOnce(Return(false));
+
+    // When
     {
-        MyMachine m;
-        EventFunc f = &MyMachine::first;
-        (m.*f)(1);
-
-        std::function<void(MyMachine&, int)> f2(std::mem_fn(&MyMachine::first));
-        f2(m, 2);
-
-        std::shared_ptr<void> f6 = std::make_shared<decltype(std::mem_fn(&MyMachine::first))>(std::mem_fn(&MyMachine::first));
-        auto f7 = std::static_pointer_cast<decltype(std::mem_fn(&MyMachine::first))>(f6);
-        (*f7)(m, 7);
+        Common::ExpectErrorLog errors; // Expect unhandled event error
+        m.from_A1_to_C1_with_condition();
     }
 
-    std::shared_ptr<void> func(new Param(21));
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::A1, m.getState());
 }
 
-TEST(StateMachineTest, recursion)
+TEST_F(InitializedMockMachineTest, transitionWithRecursiveTransitionEvent)
 {
-    class MyMachine
-    {
-    public:
-        MyMachine()
-          : impl_(A)
-        {
-            impl_.onTransition(A, B, &MyMachine::first).invoke([this](const MoveOnlyParam& p)
-                {
-                    std::cout << "A->B(" << p.i_ << ")" << std::endl;
-                    if (p.i_ > 0)
-                    {
-                        first(MoveOnlyParam(-(p.i_ - 1)));
-                        first(MoveOnlyParam(-(p.i_ - 2)));
-                    }
-                });
-            impl_.onTransition(B, A, &MyMachine::first).invoke([this](const MoveOnlyParam& p)
-                {
-                    std::cout << "B->A(" << p.i_ << ")" << std::endl;
-                    if (p.i_ < 0)
-                    {
-                        first(MoveOnlyParam(-(p.i_ + 1)));
-                        first(MoveOnlyParam(-(p.i_ + 2)));
-                    }
-                });
-        }
+    // Given
+    const int data = 6;
 
-        ~MyMachine()
-        {
-        }
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] { m.from_B1_to_C1(data); }));
+    EXPECT_CALL(m, B_Entry());
+    EXPECT_CALL(m, B1_Entry());
+    EXPECT_CALL(m, B1_Exit());
+    EXPECT_CALL(m, B_Exit());
+    EXPECT_CALL(m, C1_action(data));
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
 
-        void first(MoveOnlyParam&& p) { std::cout << "first(" << p.i_ << ")" << std::endl; impl_(&MyMachine::first, std::move(p)); };
+    // When
+    m.to_B1();
 
-    private:
-        StateMachine<MyMachine, MyState> impl_;
-    };
-
-    MyMachine m;
-    m.first(MoveOnlyParam(3));
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
 }
 
-namespace
+TEST_F(InitializedMockMachineTest, transitionWithRecursiveInternalAction)
 {
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this] { m.to_self(); }));
+    EXPECT_CALL(m, B_Entry());
+    EXPECT_CALL(m, B1_Entry());
+    EXPECT_CALL(m, internalAction());
+
+    // When
+    m.to_B1();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::B1, m.getState());
+}
+
+TEST_F(InitializedMockMachineTest, transitionWithMultipleRecursiveEvents)
+{
+    // Given
+    const int data = 6;
+
+    // Expect
+    InSequence sequence;
+    EXPECT_CALL(m, A21_Exit());
+    EXPECT_CALL(m, A2_Exit());
+    EXPECT_CALL(m, A_Exit());
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] { m.from_B1_to_C1(data); m.to_self(); }));
+    EXPECT_CALL(m, B_Entry());
+    EXPECT_CALL(m, B1_Entry());
+    EXPECT_CALL(m, B1_Exit());
+    EXPECT_CALL(m, B_Exit());
+    EXPECT_CALL(m, C1_action(data));
+    EXPECT_CALL(m, C_Entry());
+    EXPECT_CALL(m, C1_Entry());
+    EXPECT_CALL(m, internalAction()).WillOnce(Invoke([this] { EXPECT_EQ(MockMachine::C1, m.getState()); }));
+
+    // When
+    m.to_B1();
+
+    // Then
+    verifyExpectations();
+    EXPECT_EQ(MockMachine::C1, m.getState());
+}
+
+namespace {
 
 // http://www.agilemodeling.com/artifacts/stateMachineDiagram.htm, figure 1
 class Enrollment
@@ -408,7 +692,7 @@ private:
 };
 }
 
-TEST(StateMachineTest, enrollmentMachine)
+TEST(StateMachineTest, enrollmentExample)
 {
     Enrollment e;
     EXPECT_EQ(Enrollment::PROPOSED, e.getState());
@@ -451,246 +735,6 @@ TEST(StateMachineTest, enrollmentMachine)
 
     e.cancel();
     EXPECT_EQ(Enrollment::DONE, e.getState());
-}
-
-template<typename T, typename R, typename ...Args>
-auto memberCall(T& obj, R(T::*func)(Args...))
-{
-    return [&obj, func](Args... args) { (obj.*func)(std::forward<Args...>(args)...); };
-}
-template<typename T, typename R, typename ...Args>
-auto memberCall(const T& obj, R(T::*func)(Args...) const)
-{
-    return [&obj, func](Args... args) { (obj.*func)(std::forward<Args...>(args)...); };
-}
-
-TEST(StateMachineTest, enrollmentMachineNewSyntax)
-{
-    class MyMachine
-    {
-    public:
-        MyMachine()
-          : impl_(A)
-        {
-            impl_.onTransition(A, B, &MyMachine::first).invoke(*this, &MyMachine::doFirst);
-            impl_.onTransition(A, B, &MyMachine::first)
-                    .when([](int i){ return i != 0; })
-                    .invoke([](int i){ std::cout << i << std::endl;  return i; });
-            impl_.onTransition(B, A, &MyMachine::first).when([](int i){ return i != 0; }).invoke([](int i){ std::cout << i << std::endl;  return i; });
-        }
-
-        ~MyMachine()
-        {
-        }
-
-        void first(int i) { impl_(&MyMachine::first, i); };
-
-        int doFirst(int i) const
-        {
-            std::cout << i << std::endl;
-            return 1;
-        }
-
-    private:
-        StateMachine<MyMachine, MyState> impl_;
-    };
-
-    MyMachine m;
-    m.first(1);
-    m.first(0);
-    m.first(2);
-
-
-//    Machine<MyMachine, MyState>::Transformer<int> t(A, A, &MyMachine::first);
-//    t << [](int i){ std::cout << i << std::endl; };
-}
-
-namespace M {
-class T
-{
-protected:
-    int current_;
-    int event_;
-    int condition_;
-    int action_;
-    int next_;
-
-    T(T&&) = default;
-
-    template <typename Concrete>
-    Concrete& merge(const T& o)
-    {
-        current_ = std::max(current_, o.current_);
-        event_ = std::max(event_, o.event_);
-        condition_ = std::max(condition_, o.condition_);
-        action_ = std::max(action_, o.action_);
-        next_ = std::max(next_, o.next_);
-        return static_cast<Concrete&>(*this);
-    }
-
-public:
-    T() : current_(-1), event_(-1), condition_(-1), action_(-1), next_(-1) { }
-
-    void print() const
-    {
-        std::cout << current_ << event_ << condition_ << action_ << next_ << std::endl;
-    }
-};
-
-class S : public T
-{
-public:
-    S(int i) : T()
-    {
-        current_ = i;
-    }
-
-    auto operator+(const T& t) -> decltype(*this)
-    {
-        std::cout << "+" << std::endl;
-        return merge<decltype(*this)>(t);
-    }
-    auto operator==(const T& t) -> decltype(*this)
-    {
-        std::cout << "==" << std::endl;
-        return merge<decltype(*this)>(t);
-    }
-};
-class E : public T
-{
-public:
-    E(int i) : T()
-    {
-        event_ = i;
-    }
-    auto operator[](const T& t) -> decltype(*this)
-    {
-        std::cout << "[]" << std::endl;
-        return merge<decltype(*this)>(t);
-    }
-    auto operator/(const T& t) -> decltype(*this)
-    {
-        std::cout << "/" << std::endl;
-        return merge<decltype(*this)>(t);
-    }
-};
-class C : public T
-{
-public:
-    C(int i) : T()
-    {
-        condition_ = i;
-    }
-};
-class A : public T
-{
-public:
-    A(int i) : T()
-    {
-        action_ = i;
-    }
-};
-class N : public T
-{
-public:
-    N(int i) : T()
-    {
-        next_ = i;
-    }
-};
-
-} // namespace M
-
-TEST(StateMachineTest, operatorSyntaxEnforcement)
-{
-//    A + B * C / D [E] == F;
-
-    const M::T& c = M::S(1) + M::E(2) [M::C(3)] / M::A(4) == M::N(5);
-    c.print();
-
-    const M::T& c2 = M::S(1) + M::E(2) / M::A(4) == M::N(5);
-    c2.print();
-
-    const M::T& c3 = M::S(1) + M::E(2) / M::A(4);
-    c3.print();
-}
-
-TEST(StateMachineTest, threads)
-{
-    class C
-    {
-    public:
-        void g(const std::string& str)
-        {
-            std::cout << str << std::endl;
-        }
-
-        void f()
-        {
-            std::string temp("a string");
-
-            auto future = std::async(&C::g, this, temp);
-            future.get();
-        }
-
-    };
-
-    C c;
-    c.f();
-}
-
-namespace A{
-
-class Machine
-{
-public:
-    Machine()
-      : impl_(A11)
-    {
-        impl_.setParent(A, {A1, A2});
-        impl_.setParent(A1, A11);
-        impl_.setParent(B, B1);
-
-        impl_.onEntry(A).invoke([]{ std::cout << "Enter A" << std::endl; });
-        impl_.onExit(A).invoke([]{ std::cout << "Exit A" << std::endl; });
-        impl_.onEntry(A1).invoke([]{ std::cout << "Enter A1" << std::endl; });
-        impl_.onExit(A1).invoke([]{ std::cout << "Exit A1" << std::endl; });
-        impl_.onEntry(A11).invoke([]{ std::cout << "Enter A11" << std::endl; });
-        impl_.onExit(A11).invoke([]{ std::cout << "Exit A11" << std::endl; });
-        impl_.onEntry(A2).invoke([]{ std::cout << "Enter A2" << std::endl; });
-        impl_.onExit(A2).invoke([]{ std::cout << "Exit A2" << std::endl; });
-        impl_.onEntry(B).invoke([]{ std::cout << "Enter B" << std::endl; });
-        impl_.onExit(B).invoke([]{ std::cout << "Exit B" << std::endl; });
-        impl_.onEntry(B1).invoke([]{ std::cout << "Enter B1" << std::endl; });
-        impl_.onExit(B1).invoke([]{ std::cout << "Exit B1" << std::endl; });
-
-        impl_.onTransition(A11, B1, &Machine::to_B1);
-        impl_.onTransition(B1, A11, &Machine::to_A11);
-    }
-
-    enum State
-    {
-        A,
-          A1,
-            A11,
-          A2,
-        B,
-          B1
-    };
-
-    void to_A11() { impl_(&Machine::to_A11); };
-    void to_B1() { impl_(&Machine::to_B1); };
-
-private:
-    StateMachine<Machine, State> impl_;
-};
-}
-
-TEST(StateMachineTest, hierarchy)
-{
-    A::Machine m;
-//    m.to_B1();
-//    m.to_A11();
 }
 
 } // namespace Logic
