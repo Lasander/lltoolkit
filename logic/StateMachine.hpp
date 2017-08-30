@@ -283,6 +283,9 @@ private:
      *
      * E.g. if state A ancestors are B -> C and referenceState ancestors
      * are C -> D, the return value will be (A, B).
+     *
+     * In the special case the state == referenceState, return value will
+     * contain only state.
      */
     std::vector<State> getAncestorsUntilCommonAncestor(State state, State referenceState) const;
 
@@ -810,16 +813,23 @@ std::vector<State> StateMachine<ConcreteMachine, State>::getAncestorsUntilCommon
 
     std::vector<State> ancestors;
 
-    for (auto a : allAncestors)
+    if (state == referenceState)
     {
-        for (auto ra : allReferenceAncestors)
+        ancestors.push_back(state);
+    }
+    else
+    {
+        for (auto a : allAncestors)
         {
-            if (a == ra)
+            for (auto ra : allReferenceAncestors)
             {
-                return ancestors;
+                if (a == ra)
+                {
+                    return ancestors;
+                }
             }
+            ancestors.push_back(a);
         }
-        ancestors.push_back(a);
     }
 
     return ancestors;
@@ -836,7 +846,7 @@ StateMachine<ConcreteMachine, State>::Transition::Transition(
   : current_(current), next_(next), event_(identify(event)),
     action_(action),
     condition_(condition),
-    internal_(false)
+    internal_(isInternal)
 {
 }
 
