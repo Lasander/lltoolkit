@@ -28,6 +28,11 @@ namespace Logic {
  *       the handling of the current event
  *     - Note: As any event could be recursive, all event parameters
  *       must be copyable or movable.
+ *
+ * TODO:
+ * - Make true composite states instead of hierarchically defined state behavior
+ * - Add support for composite state history pseudo-states
+ * - Consider orthogonal regions
  */
 template <typename ConcreteMachine, typename State>
 class StateMachine
@@ -54,7 +59,7 @@ public:
     /**
      * Explicitly enter the initial state executing any necessary (hierarchical) entry actions
      *
-     * Should be called after the machine hierarchy and transactions have been defined.
+     * Should be called after the machine hierarchy and transactions have been fully defined.
      * Will have an effect only on first call on each instance.
      */
     void enterInitialState();
