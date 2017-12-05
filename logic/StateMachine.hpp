@@ -333,11 +333,8 @@ private:
          */
         bool changesState() const;
 
-        State getNextState() const
-        {
-            return next_;
-        }
-
+        /** @return new state after this transition */
+        State getNextState() const;
 
         /** @return transition condition result for @p event with @p args */
         template<typename ...Args, typename ...Args2>
@@ -460,7 +457,7 @@ decltype(auto) apply(F&& f, Tuple&& tuple)
 {
     return std17::details::apply(std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>{}, std::forward<F>(f), std::forward<Tuple>(tuple));
 }
-} // namespace cpp17
+} // namespace std17
 
 template <typename ConcreteMachine, typename State>
 template<typename ...Args, typename ...Args2>
@@ -859,6 +856,12 @@ template <typename ConcreteMachine, typename State>
 bool StateMachine<ConcreteMachine, State>::Transition::changesState() const
 {
     return !internal_;
+}
+
+template <typename ConcreteMachine, typename State>
+State StateMachine<ConcreteMachine, State>::Transition::getNextState() const
+{
+    return next_;
 }
 
 template <typename ConcreteMachine, typename State>
