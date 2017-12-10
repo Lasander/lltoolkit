@@ -6,10 +6,10 @@ IndentWidth: 4
 UseTab: Never
 
 AccessModifierOffset: -4
-AlignAfterOpenBracket: false
+AlignAfterOpenBracket: AlwaysBreak
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
@@ -41,3 +41,10 @@ SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
+
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerIndentWidth: 4
+
+SortUsingDeclarations: true
+SpaceAfterTemplateKeyword: false
