@@ -1,9 +1,9 @@
 #ifndef COMMON_SEMAPHORE_HPP_
 #define COMMON_SEMAPHORE_HPP_
 
-#include <mutex>
-#include <condition_variable>
 #include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 namespace Common {
 
@@ -32,11 +32,11 @@ public:
     bool tryWait(size_t count = 1);
 
     /** Block to wait for a @p duration for @p count resources */
-    template<class Rep, class Period>
+    template <class Rep, class Period>
     bool waitFor(const std::chrono::duration<Rep, Period>& duration, size_t count = 1);
 
     /** Block to wait until a @p timePoint for @p count resources */
-    template<class Clock, class Duration>
+    template <class Clock, class Duration>
     bool waitUntil(const std::chrono::time_point<Clock, Duration>& timePoint, size_t count = 1);
 
     /** @return current resources count */
@@ -48,9 +48,9 @@ private:
     std::condition_variable condition_;
 };
 
-inline Semaphore::Semaphore(size_t count)
-    : count_{count}
-{}
+inline Semaphore::Semaphore(size_t count) : count_{count}
+{
+}
 
 inline void Semaphore::notify(size_t count)
 {
@@ -64,7 +64,7 @@ inline void Semaphore::notify(size_t count)
 inline void Semaphore::wait(size_t count)
 {
     std::unique_lock<std::mutex> lock{mutex_};
-    condition_.wait(lock, [&]{ return count_ >= count; });
+    condition_.wait(lock, [&] { return count_ >= count; });
     count_ -= count;
 }
 
@@ -73,11 +73,11 @@ inline bool Semaphore::tryWait(size_t count)
     return waitFor(std::chrono::nanoseconds::zero(), count);
 }
 
-template<class Rep, class Period>
+template <class Rep, class Period>
 bool Semaphore::waitFor(const std::chrono::duration<Rep, Period>& duration, size_t count)
 {
     std::unique_lock<std::mutex> lock{mutex_};
-    auto finished = condition_.wait_for(lock, duration, [&]{ return count_ >= count; });
+    auto finished = condition_.wait_for(lock, duration, [&] { return count_ >= count; });
 
     if (finished)
     {
@@ -87,11 +87,11 @@ bool Semaphore::waitFor(const std::chrono::duration<Rep, Period>& duration, size
     return finished;
 }
 
-template<class Clock, class Duration>
+template <class Clock, class Duration>
 bool Semaphore::waitUntil(const std::chrono::time_point<Clock, Duration>& timePoint, size_t count)
 {
     std::unique_lock<std::mutex> lock{mutex_};
-    auto finished = condition_.wait_until(lock, timePoint, [&]{ return count_ >= count; });
+    auto finished = condition_.wait_until(lock, timePoint, [&] { return count_ >= count; });
 
     if (finished)
         count_ -= count;
@@ -105,6 +105,6 @@ inline size_t Semaphore::getCount() const
     return count_;
 }
 
-} // Common
+} // namespace Common
 
 #endif
