@@ -67,7 +67,7 @@ public:
     /**
      * Handle @p event with @p args.
      *
-     * Can be called directy of from the event functions in the ConcreteMachine. E.g.
+     * Can be called directly of from the event functions in the ConcreteMachine. E.g.
      *
      * class MyMachine
      * {
@@ -172,7 +172,7 @@ public:
     auto onTransition(State current, EventFunc<Args...> event) -> TransitionBuilder<Args...>;
 
     /**
-     * Builder for extry and exit actions
+     * Builder for entry and exit actions
      *
      * Create with @see onEntry or @see onExit
      * Add the action using the invoke member functions, e.g.
@@ -286,7 +286,7 @@ private:
      * @return ancestors of @p state including state itself up to, but
      *         excluding, first common ancestor with @p referenceState
      *
-     * E.g. if state A ancestors are B -> C and referenceState ancestors
+     * E.g. if state A ancestors are B -> C -> D and referenceState ancestors
      * are C -> D, the return value will be (A, B).
      *
      * In the special case the state == referenceState, return value will
