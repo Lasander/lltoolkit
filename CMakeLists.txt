@@ -20,6 +20,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -stdlib=libc++ -Wall -Werror")
 
 # Testing support
+enable_testing()
 set(BUILD_GMOCK ON)
 include("cmake/gtest.cmake")
 
