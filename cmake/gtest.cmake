@@ -1,5 +1,13 @@
-# Download and unpack googletest at configure time
+# see: https://github.com/google/googletest/tree/master/googletest#incorporating-into-an-existing-cmake-project
+
+# Configure external googletest project
+set(GTEST_GIT_REPOSITORY "https://github.com/google/googletest.git")
+set(GTEST_GIT_TAG        "release-1.8.0")
+set(GTEST_SOURCE_DIR     "${CMAKE_BINARY_DIR}/googletest-src")
+set(GTEST_BINARY_DIR     "${CMAKE_BINARY_DIR}/googletest-build")
 configure_file(cmake/gtest/CMakeLists.txt.in googletest-download/CMakeLists.txt)
+
+# Download and unpack googletest at configure time
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
     RESULT_VARIABLE result
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/googletest-download )
@@ -19,8 +27,8 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 # Add googletest directly to our build. This defines
 # the gtest and gtest_main targets.
-add_subdirectory(${CMAKE_BINARY_DIR}/googletest-src
-                 ${CMAKE_BINARY_DIR}/googletest-build)
+add_subdirectory(${GTEST_SOURCE_DIR}
+                 ${GTEST_BINARY_DIR})
 
 # The gtest/gtest_main targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
