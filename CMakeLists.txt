@@ -7,6 +7,8 @@ project(LLToolkit)
 set(LLToolkit_VERSION_MAJOR 0)
 set(LLToolkit_VERSION_MINOR 1)
 
+include(CMakeToolsHelpers OPTIONAL)
+
 # configure a header file to pass some of the CMake settings to the source code
 configure_file(
     "${PROJECT_SOURCE_DIR}/LLToolkitConfig.hpp.in"
