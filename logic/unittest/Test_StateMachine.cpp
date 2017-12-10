@@ -1,4 +1,3 @@
-#include "../../common/TypeHelpers.hpp"
 #include "../../common/unittest/LogHelpers.hpp"
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
@@ -6,7 +5,6 @@
 #include <string>
 #include <iostream>
 #include <map>
-#include <iomanip>
 #include "../StateMachine.hpp"
 
 using namespace testing;
