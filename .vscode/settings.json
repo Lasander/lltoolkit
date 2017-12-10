@@ -1,3 +1,9 @@
 // Place your settings in this file to overwrite default and user settings.
 {
+    "search.exclude": {
+        "**/.git": true,
+        "**/build": true,
+        "**/install": true,
+        ".project": true
+    }
 }
