@@ -15,7 +15,7 @@ configure_file(
     "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp"
 )
 # add the binary tree to the search path for include files
-# so that we will find TutorialConfig.h
+# so that we will find the xxConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 
 # Append c++ compiler flags
@@ -32,9 +32,6 @@ add_subdirectory(logic)
 
 # add the executable
 add_executable(lltoolkit main.cpp)
-
-# Dummy install location
-set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install/")
 
 # add the install targets
 install (TARGETS lltoolkit DESTINATION bin)
