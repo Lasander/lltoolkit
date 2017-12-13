@@ -5,7 +5,9 @@ set(GTEST_GIT_REPOSITORY "https://github.com/google/googletest.git")
 set(GTEST_GIT_TAG        "release-1.8.0")
 set(GTEST_SOURCE_DIR     "${CMAKE_BINARY_DIR}/googletest-src")
 set(GTEST_BINARY_DIR     "${CMAKE_BINARY_DIR}/googletest-build")
-configure_file(cmake/gtest/CMakeLists.txt.in googletest-download/CMakeLists.txt)
+configure_file(
+  ${CMAKE_CURRENT_LIST_DIR}/gtest/CMakeLists.txt.in
+  ${CMAKE_BINARY_DIR}/googletest-download/CMakeLists.txt)
 
 # Download and unpack googletest at configure time
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
