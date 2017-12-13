@@ -1,5 +1,4 @@
-#ifndef DATA_DATA_HPP_
-#define DATA_DATA_HPP_
+#pragma once
 
 #include "DataIf.hpp"
 #include <utility>
@@ -84,5 +83,3 @@ const DataType& Data<DataType>::get() const
 }
 
 }
-
-#endif

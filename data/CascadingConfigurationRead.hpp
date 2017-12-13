@@ -1,5 +1,4 @@
-#ifndef DATA_CASCADINGCONFIGURATIONREAD_HPP_
-#define DATA_CASCADINGCONFIGURATIONREAD_HPP_
+#pragma once
 
 #include "ConfigurationIf.hpp"
 
@@ -37,6 +36,4 @@ private:
     const ConfigurationReadIf& parentConfiguration_;
 };
 
-}
-
-#endif
+} // namespace Data

@@ -1,5 +1,4 @@
-#ifndef DATA_DATAIF_HPP_
-#define DATA_DATAIF_HPP_
+#pragma once
 
 #include "DataReadIf.hpp"
 #include "DataWriteIf.hpp"
@@ -18,5 +17,3 @@ protected:
 };
 
 }
-
-#endif

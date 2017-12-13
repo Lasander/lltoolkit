@@ -1,5 +1,4 @@
-#ifndef COMMON_UNITTEST_LOGHELPERS_HPP_
-#define COMMON_UNITTEST_LOGHELPERS_HPP_
+#pragma once
 
 #include "gtest/gtest.h"
 #include <iostream>
@@ -88,4 +87,3 @@ inline ExpectNoErrorLogs::~ExpectNoErrorLogs()
 
 } // Common
 
-#endif

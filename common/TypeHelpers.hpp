@@ -1,12 +1,4 @@
-/**
- * TypeHelpers.hpp
- *
- *  Created on: Apr 29, 2015
- *      Author: lasse
- */
-
-#ifndef COMMON_TYPEHELPERS_HPP_
-#define COMMON_TYPEHELPERS_HPP_
+#pragma once
 
 #include <tuple>
 #include <type_traits>
@@ -108,4 +100,3 @@ template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
 } // namespace Common
 
-#endif /* COMMON_TYPEHELPERS_HPP_ */

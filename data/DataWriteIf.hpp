@@ -1,5 +1,4 @@
-#ifndef DATA_DATAWRITEIF_HPP_
-#define DATA_DATAWRITEIF_HPP_
+#pragma once
 
 namespace Data {
 
@@ -23,5 +22,3 @@ private:
 };
 
 }
-
-#endif

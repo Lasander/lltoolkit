@@ -1,5 +1,4 @@
-#ifndef DATA_HETEROGENOUSQUEUE_HPP_
-#define DATA_HETEROGENOUSQUEUE_HPP_
+#pragma once
 
 #include "../common/Semaphore.hpp"
 #include <iostream>
@@ -348,5 +347,3 @@ size_t HeterogeneousQueue<T>::getPotentialFreeSpaceAtBack(Block& block) const
 }
 
 } // Data
-
-#endif

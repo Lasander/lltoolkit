@@ -1,5 +1,4 @@
-#ifndef DATA_SERIALIZABLEDATAMODEL_HPP_
-#define DATA_SERIALIZABLEDATAMODEL_HPP_
+#pragma once
 
 #include "SerializableDataModelIf.hpp"
 #include "SerializerIf.hpp"
@@ -91,5 +90,3 @@ void SerializableDataModel<DataType, Less>::deserializationComplete()
 }
 
 } /* namespace Data */
-
-#endif

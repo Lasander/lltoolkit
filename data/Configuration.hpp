@@ -1,5 +1,4 @@
-#ifndef DATA_CONFIGURATION_H_
-#define DATA_CONFIGURATION_H_
+#pragma once
 
 #include "ConfigurationIf.hpp"
 #include <string>
@@ -28,5 +27,3 @@ private:
 };
 
 } // Data
-
-#endif

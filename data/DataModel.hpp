@@ -1,12 +1,4 @@
-/**
- * DataModel.hpp
- *
- *  Created on: Mar 29, 2015
- *      Author: lasse
- */
-
-#ifndef DATA_DATAMODEL_HPP_
-#define DATA_DATAMODEL_HPP_
+#pragma once
 
 #include "Publisher.hpp"
 #include "DataModelIf.hpp"
@@ -152,5 +144,3 @@ void DataModel<DataType, Less>::publishPendingChanges()
 }
 
 }  // namespace Data
-
-#endif /* DATA_DATAMODEL_HPP_ */

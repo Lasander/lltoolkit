@@ -1,5 +1,4 @@
-#ifndef DATA_DATAMODELIF_HPP_
-#define DATA_DATAMODELIF_HPP_
+#pragma once
 
 #include "DataModelReadIf.hpp"
 #include "DataWriteIf.hpp"
@@ -18,5 +17,3 @@ protected:
 };
 
 }
-
-#endif

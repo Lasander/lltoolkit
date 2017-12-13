@@ -1,5 +1,4 @@
-#ifndef DATA_SERIALIZABLEIF_H_
-#define DATA_SERIALIZABLEIF_H_
+#pragma once
 
 #include <iosfwd>
 
@@ -24,5 +23,3 @@ public:
 };
 
 } // Data
-
-#endif

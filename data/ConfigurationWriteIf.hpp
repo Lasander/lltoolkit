@@ -1,5 +1,4 @@
-#ifndef DATA_CONFIGURATIONWRITEIF_HPP_
-#define DATA_CONFIGURATIONWRITEIF_HPP_
+#pragma once
 
 #include <iosfwd>
 
@@ -26,5 +25,3 @@ public:
 };
 
 } // Data
-
-#endif

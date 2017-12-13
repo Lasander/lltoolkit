@@ -1,5 +1,4 @@
-#ifndef DATA_HETEROGENEOUSRINGBUFFER_HPP_
-#define DATA_HETEROGENEOUSRINGBUFFER_HPP_
+#pragma once
 
 #include "../common/Semaphore.hpp"
 #include <assert.h>
@@ -295,5 +294,3 @@ size_t HeterogeneousRingBuffer<T, BYTES>::calculateEnvelopeSize(const U& element
 }
 
 } // Data
-
-#endif

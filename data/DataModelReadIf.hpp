@@ -1,5 +1,4 @@
-#ifndef DATA_DATAMODELREADIF_HPP_
-#define DATA_DATAMODELREADIF_HPP_
+#pragma once
 
 #include "DataReadIf.hpp"
 
@@ -23,6 +22,3 @@ protected:
 };
 
 }
-
-
-#endif

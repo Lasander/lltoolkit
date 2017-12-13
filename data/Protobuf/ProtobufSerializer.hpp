@@ -1,5 +1,4 @@
-#ifndef DATA_PROTOBUF_PROTOBUFSERIALIZER_HPP_
-#define DATA_PROTOBUF_PROTOBUFSERIALIZER_HPP_
+#pragma once
 
 #include "../SerializerIf.hpp"
 #include <iosfwd>
@@ -37,5 +36,3 @@ bool ProtobufSerializer<DataType>::deserialize(DataType& data, std::istream& inp
 
 } /* namespace Protobuf */
 } /* namespace Data */
-
-#endif

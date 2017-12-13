@@ -1,5 +1,4 @@
-#ifndef DATA_SERIALIZERIF_HPP_
-#define DATA_SERIALIZERIF_HPP_
+#pragma once
 
 namespace Data {
 
@@ -24,5 +23,3 @@ public:
 };
 
 } /* namespace Data */
-
-#endif

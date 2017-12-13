@@ -1,5 +1,4 @@
-#ifndef DATA_DATAREADIF_HPP_
-#define DATA_DATAREADIF_HPP_
+#pragma once
 
 namespace Data {
 
@@ -23,5 +22,3 @@ private:
 };
 
 }
-
-#endif

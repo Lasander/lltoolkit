@@ -1,5 +1,4 @@
-#ifndef COMMON_SEMAPHORE_HPP_
-#define COMMON_SEMAPHORE_HPP_
+#pragma once
 
 #include <chrono>
 #include <condition_variable>
@@ -106,5 +105,3 @@ inline size_t Semaphore::getCount() const
 }
 
 } // namespace Common
-
-#endif

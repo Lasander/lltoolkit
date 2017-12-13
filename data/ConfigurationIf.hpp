@@ -1,5 +1,4 @@
-#ifndef DATA_CONFIGURATIONIF_H_
-#define DATA_CONFIGURATIONIF_H_
+#pragma once
 
 #include "ConfigurationReadIf.hpp"
 #include "ConfigurationWriteIf.hpp"
@@ -16,5 +15,3 @@ public:
 };
 
 } // Data
-
-#endif

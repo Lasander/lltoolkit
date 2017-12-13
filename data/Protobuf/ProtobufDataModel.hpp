@@ -1,5 +1,4 @@
-#ifndef DATA_PROTOBUF_PROTOBUFDATAMODEL_HPP_
-#define DATA_PROTOBUF_PROTOBUFDATAMODEL_HPP_
+#pragma once
 
 #include "../SerializableDataModel.hpp"
 #include "ProtobufSerializer.hpp"
@@ -84,5 +83,3 @@ void ProtobufDataModel<DataType, Less>::deserializationComplete()
 
 } /* namespace Protobuf */
 } /* namespace Data */
-
-#endif

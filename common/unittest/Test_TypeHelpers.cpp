@@ -1,10 +1,3 @@
-/**
- * Test_TypeHelpers.cpp
- *
- *  Created on: May 1, 2015
- *      Author: lasse
- */
-
 #include "../../common/TypeHelpers.hpp"
 #include "gtest/gtest.h"
 

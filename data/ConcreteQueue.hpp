@@ -1,5 +1,4 @@
-#ifndef DATA_CONCRETEQUEUE_HPP_
-#define DATA_CONCRETEQUEUE_HPP_
+#pragma once
 
 #include "../common/Semaphore.hpp"
 #include <deque>
@@ -106,5 +105,3 @@ const T& ConcreteQueue<T>::dequeue()
 }
 
 } // Data
-
-#endif

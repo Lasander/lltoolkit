@@ -1,5 +1,4 @@
-#ifndef DATA_CONFIGURATIONREADIF_HPP_
-#define DATA_CONFIGURATIONREADIF_HPP_
+#pragma once
 
 #include <iosfwd>
 
@@ -25,5 +24,3 @@ public:
 };
 
 } // Data
-
-#endif

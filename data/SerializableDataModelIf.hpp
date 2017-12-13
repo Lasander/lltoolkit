@@ -1,5 +1,4 @@
-#ifndef DATA_SERIALIZABLEDATAMODELIF_HPP_
-#define DATA_SERIALIZABLEDATAMODELIF_HPP_
+#pragma once
 
 #include "SerializableIf.hpp"
 #include "DataModelIf.hpp"
@@ -17,5 +16,3 @@ public:
 };
 
 } // Data
-
-#endif

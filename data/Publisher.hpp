@@ -1,12 +1,4 @@
-/**
- * Publisher.h
- *
- *  Created on: Mar 31, 2015
- *      Author: lasse
- */
-
-#ifndef DATA_PUBLISHER_HPP_
-#define DATA_PUBLISHER_HPP_
+#pragma once
 
 #include <map>
 #include <functional>
@@ -207,5 +199,3 @@ bool Publisher<DataType>::removeSubscriber(void* object)
 }
 
 } // Data
-
-#endif /* DATA_PUBLISHER_HPP_ */
