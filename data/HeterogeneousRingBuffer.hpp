@@ -66,11 +66,12 @@ private:
     struct Envelope
     {
         Envelope(byte* next, T* element);
-        const Envelope* next_;  ///< Future position of next wrapper
-        T* element_;            ///< Wrapped element
+        const Envelope* next_; ///< Future position of next wrapper
+        T* element_;           ///< Wrapped element
     };
     /** Template to allow heterogeneous elements */
-    template <typename U> struct ElementEnvelope : public Envelope
+    template <typename U>
+    struct ElementEnvelope : public Envelope
     {
         ElementEnvelope(byte* next, const U& element);
         U concreteElement_;
@@ -107,14 +108,16 @@ private:
     ///@{
     size_t getPotentialFreeSpaceAtBack() const;
     void insertPadding();
-    template <typename U> void insertElement(const U& element);
-    template <typename U> size_t calculateEnvelopeSize(const U& element);
+    template <typename U>
+    void insertElement(const U& element);
+    template <typename U>
+    size_t calculateEnvelopeSize(const U& element);
     ///@}
 };
 
 template <typename T, size_t BYTES>
-HeterogeneousRingBuffer<T, BYTES>::HeterogeneousRingBuffer() :
-    buffer_(),
+HeterogeneousRingBuffer<T, BYTES>::HeterogeneousRingBuffer()
+  : buffer_(),
     begin_(buffer_),
     end_(buffer_ + BYTES),
     writePosition_(buffer_),
@@ -202,17 +205,15 @@ void HeterogeneousRingBuffer<T, BYTES>::waitForElement()
 }
 
 template <typename T, size_t BYTES>
-HeterogeneousRingBuffer<T, BYTES>::Envelope::Envelope(byte* next, T* element) :
-    next_(reinterpret_cast<Envelope*>(next)),
-    element_(element)
+HeterogeneousRingBuffer<T, BYTES>::Envelope::Envelope(byte* next, T* element)
+  : next_(reinterpret_cast<Envelope*>(next)), element_(element)
 {
 }
 
 template <typename T, size_t BYTES>
 template <typename U>
-HeterogeneousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* next, const U& element) :
-    Envelope(next, &concreteElement_),
-    concreteElement_(element)
+HeterogeneousRingBuffer<T, BYTES>::ElementEnvelope<U>::ElementEnvelope(byte* next, const U& element)
+  : Envelope(next, &concreteElement_), concreteElement_(element)
 {
 }
 
@@ -293,4 +294,4 @@ size_t HeterogeneousRingBuffer<T, BYTES>::calculateEnvelopeSize(const U& element
     return unalignedSize + maxAlignment - remainder;
 }
 
-} // Data
+} // namespace Data

@@ -8,7 +8,7 @@ class DataReadIf
 {
 public:
     /** @return data value */
-	virtual const DataType& get() const = 0;
+    virtual const DataType& get() const = 0;
 
     virtual ~DataReadIf() {}
 
@@ -21,4 +21,4 @@ private:
     DataReadIf& operator=(const DataReadIf&) = delete;
 };
 
-}
+} // namespace Data

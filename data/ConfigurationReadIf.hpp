@@ -23,4 +23,4 @@ public:
     virtual ~ConfigurationReadIf() {}
 };
 
-} // Data
+} // namespace Data

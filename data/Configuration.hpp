@@ -1,8 +1,8 @@
 #pragma once
 
 #include "ConfigurationIf.hpp"
-#include <string>
 #include <map>
+#include <string>
 
 namespace Data {
 
@@ -21,9 +21,9 @@ public:
     virtual bool hasItem(const std::string& key) const override;
     virtual void removeItem(const std::string& key) override;
     virtual void clearItems() override;
-    
+
 private:
     std::map<std::string, std::string> items_;
 };
 
-} // Data
+} // namespace Data

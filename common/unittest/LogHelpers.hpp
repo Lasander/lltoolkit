@@ -10,15 +10,15 @@ namespace Common {
 class ErrorRedirect
 {
 protected:
-	ErrorRedirect();
-	~ErrorRedirect();
+    ErrorRedirect();
+    ~ErrorRedirect();
 
-	/** @return the collected error output */
-	const std::ostringstream& getErrors() const;
+    /** @return the collected error output */
+    const std::ostringstream& getErrors() const;
 
 private:
-	std::streambuf* originalCerrStreamBuffer_;
-	std::ostringstream interceptedCerr_;
+    std::streambuf* originalCerrStreamBuffer_;
+    std::ostringstream interceptedCerr_;
 };
 
 /**
@@ -28,8 +28,8 @@ private:
 class ExpectErrorLog : private ErrorRedirect
 {
 public:
-	ExpectErrorLog();
-	~ExpectErrorLog();
+    ExpectErrorLog();
+    ~ExpectErrorLog();
 };
 
 /**
@@ -39,51 +39,44 @@ public:
 class ExpectNoErrorLogs : private ErrorRedirect
 {
 public:
-	ExpectNoErrorLogs();
-	~ExpectNoErrorLogs();
+    ExpectNoErrorLogs();
+    ~ExpectNoErrorLogs();
 };
 
 // ErrorRedirect implementation
-inline ErrorRedirect::ErrorRedirect() :
-	originalCerrStreamBuffer_{std::cerr.rdbuf()},
-	interceptedCerr_{}
+inline ErrorRedirect::ErrorRedirect() : originalCerrStreamBuffer_{std::cerr.rdbuf()}, interceptedCerr_{}
 {
-	std::cerr.rdbuf(interceptedCerr_.rdbuf());
+    std::cerr.rdbuf(interceptedCerr_.rdbuf());
 }
 
 inline ErrorRedirect::~ErrorRedirect()
 {
-	std::cerr.rdbuf(originalCerrStreamBuffer_);
+    std::cerr.rdbuf(originalCerrStreamBuffer_);
 }
 
 inline const std::ostringstream& ErrorRedirect::getErrors() const
 {
-	return interceptedCerr_;
+    return interceptedCerr_;
 }
 
 // ExpectErrorLog implementation
-inline ExpectErrorLog::ExpectErrorLog() : ErrorRedirect()
-{
-}
+inline ExpectErrorLog::ExpectErrorLog() : ErrorRedirect() {}
 
 inline ExpectErrorLog::~ExpectErrorLog()
 {
-	EXPECT_FALSE(getErrors().str().empty());
+    EXPECT_FALSE(getErrors().str().empty());
 }
 
 // ExpectNoErrorLogs implementation
-inline ExpectNoErrorLogs::ExpectNoErrorLogs() : ErrorRedirect()
-{
-}
+inline ExpectNoErrorLogs::ExpectNoErrorLogs() : ErrorRedirect() {}
 
 inline ExpectNoErrorLogs::~ExpectNoErrorLogs()
 {
-	if (!getErrors().str().empty())
-	{
-		std::cout << "Unexpected errors:" << std::endl << getErrors().str() << std::endl;
-	}
-	EXPECT_TRUE(getErrors().str().empty());
+    if (!getErrors().str().empty())
+    {
+        std::cout << "Unexpected errors:" << std::endl << getErrors().str() << std::endl;
+    }
+    EXPECT_TRUE(getErrors().str().empty());
 }
 
-} // Common
-
+} // namespace Common

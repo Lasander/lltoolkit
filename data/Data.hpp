@@ -11,21 +11,21 @@ class Data : public DataIf<DataType>
 {
 public:
     /** Construct DataModel with default data */
-	Data();
+    Data();
 
     /**
      * Construct DataModel by copying given initial data
      *
      * @param data Initial data
      */
-	Data(const DataType& data);
+    Data(const DataType& data);
 
     /**
      * Construct DataModel by moving given initial data
      *
      * @param data Initial data
      */
-	Data(DataType&& data);
+    Data(DataType&& data);
 
     /** Virtual dtor */
     virtual ~Data();
@@ -48,20 +48,17 @@ private:
 };
 
 template <typename DataType>
-Data<DataType>::Data()
- : data_{}
+Data<DataType>::Data() : data_{}
 {
 }
 
 template <typename DataType>
-Data<DataType>::Data(const DataType& data)
-  : data_(data)
+Data<DataType>::Data(const DataType& data) : data_(data)
 {
 }
 
 template <typename DataType>
-Data<DataType>::Data(DataType&& data)
-  : data_(std::forward<DataType>(data))
+Data<DataType>::Data(DataType&& data) : data_(std::forward<DataType>(data))
 {
 }
 
@@ -73,7 +70,7 @@ Data<DataType>::~Data()
 template <typename DataType>
 void Data<DataType>::set(const DataType& data)
 {
-	data_ = data;
+    data_ = data;
 }
 
 template <typename DataType>
@@ -82,4 +79,4 @@ const DataType& Data<DataType>::get() const
     return data_;
 }
 
-}
+} // namespace Data

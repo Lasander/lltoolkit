@@ -1,6 +1,6 @@
 #include "../../common/Synchronized.hpp"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include <iostream>
 
 namespace Common {
@@ -32,7 +32,7 @@ public:
 class MockData
 {
 public:
-    void setData(int data) { data_ = data;}
+    void setData(int data) { data_ = data; }
     int getData() const { return data_; };
 
 protected:
@@ -195,4 +195,4 @@ TEST(TestSynchronized, testCopy)
     EXPECT_EQ(55, data->getData());
 }
 
-} // Common
+} // namespace Common

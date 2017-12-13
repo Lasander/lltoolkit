@@ -16,4 +16,4 @@ protected:
     DataModelIf() {}
 };
 
-}
+} // namespace Data

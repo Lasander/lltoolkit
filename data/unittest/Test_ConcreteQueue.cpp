@@ -1,6 +1,6 @@
 #include "../../common/unittest/LogHelpers.hpp"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include <thread>
 
 #include "../ConcreteQueue.hpp"
@@ -60,4 +60,4 @@ TEST(ConcreteQueue, BasicIntQueueMultipleThreads)
     producer.join();
 }
 
-} // Data
+} // namespace Data

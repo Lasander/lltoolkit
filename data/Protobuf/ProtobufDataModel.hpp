@@ -39,8 +39,7 @@ private:
 };
 
 template <typename DataType, typename Less>
-ProtobufDataModel<DataType, Less>::ProtobufDataModel() :
-    serializableModel_(serializer_)
+ProtobufDataModel<DataType, Less>::ProtobufDataModel() : serializableModel_(serializer_)
 {
 }
 

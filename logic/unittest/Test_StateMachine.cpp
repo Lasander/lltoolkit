@@ -1,11 +1,11 @@
 #include "../../common/unittest/LogHelpers.hpp"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
-#include <string>
+#include "../StateMachine.hpp"
 #include <iostream>
 #include <map>
-#include "../StateMachine.hpp"
+#include <string>
 
 using namespace testing;
 
@@ -15,8 +15,7 @@ namespace {
 class MockMachine
 {
 public:
-    MockMachine()
-      : impl_(A21)
+    MockMachine() : impl_(A21)
     {
         impl_.onEntry(A).invoke(*this, &MockMachine::A_Entry);
         impl_.onExit(A).invoke(*this, &MockMachine::A_Exit);
@@ -41,23 +40,15 @@ public:
         impl_.setParent(B, B1);
         impl_.setParent(C, C1);
 
-
-        using MemberFn = void(MockMachine::*)();
-        MemberFn to_Events[] =
-        {
-            &MockMachine::to_A,
-            &MockMachine::to_A1,
-            &MockMachine::to_A2,
-            &MockMachine::to_A21,
-            &MockMachine::to_B,
-            &MockMachine::to_B1
-        };
+        using MemberFn = void (MockMachine::*)();
+        MemberFn to_Events[] = {&MockMachine::to_A,   &MockMachine::to_A1, &MockMachine::to_A2,
+                                &MockMachine::to_A21, &MockMachine::to_B,  &MockMachine::to_B1};
 
         // Define all transitions between states from A to B1
-        for (int i = A; i <= B1 ; ++i)
+        for (int i = A; i <= B1; ++i)
         {
             State from = static_cast<State>(i);
-            for (int j = A; j <= B1 ; ++j)
+            for (int j = A; j <= B1; ++j)
             {
                 State to = static_cast<State>(j);
                 impl_.onTransition(from, to, to_Events[j]).invoke(*this, &MockMachine::AB_action);
@@ -128,7 +119,6 @@ public:
     void from_B1_to_C1(int i) { impl_(&MockMachine::from_B1_to_C1, i); }
     void from_B1_to_C1_with_move(std::unique_ptr<int> i) { impl_(&MockMachine::from_B1_to_C1_with_move, std::move(i)); }
 
-
     void enterInitialState() { impl_.enterInitialState(); }
     State getState() const { return impl_.getState(); }
 
@@ -141,18 +131,11 @@ private:
 class MockMachineTest : public Test
 {
 protected:
-    void SetUp() override
-    {
-    }
+    void SetUp() override {}
 
-    void TearDown() override
-    {
-    }
+    void TearDown() override {}
 
-    void verifyExpectations()
-    {
-        Mock::VerifyAndClearExpectations(&m);
-    }
+    void verifyExpectations() { Mock::VerifyAndClearExpectations(&m); }
 
     StrictMock<MockMachine> m;
 };
@@ -397,7 +380,9 @@ TEST_F(InitializedMockMachineTest, transitionWithActionWithMove)
     InSequence sequence;
     EXPECT_CALL(m, B1_Exit());
     EXPECT_CALL(m, B_Exit());
-    EXPECT_CALL(m, C1_action_with_move(_)).WillOnce(Invoke([data](const std::unique_ptr<int>& i){ EXPECT_EQ(data, *i); }));
+    EXPECT_CALL(m, C1_action_with_move(_)).WillOnce(Invoke([data](const std::unique_ptr<int>& i) {
+        EXPECT_EQ(data, *i);
+    }));
     EXPECT_CALL(m, C_Entry());
     EXPECT_CALL(m, C1_Entry());
 
@@ -554,7 +539,10 @@ TEST_F(InitializedMockMachineTest, transitionWithMultipleRecursiveEvents)
     EXPECT_CALL(m, A21_Exit());
     EXPECT_CALL(m, A2_Exit());
     EXPECT_CALL(m, A_Exit());
-    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] { m.from_B1_to_C1(data); m.to_self(); }));
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] {
+        m.from_B1_to_C1(data);
+        m.to_self();
+    }));
     EXPECT_CALL(m, B_Entry());
     EXPECT_CALL(m, B1_Entry());
     EXPECT_CALL(m, B1_Exit());
@@ -588,53 +576,53 @@ public:
         DONE
     };
 
-    Enrollment()
-      : machine_(PROPOSED),
-        seats_(),
-        seatCount_(0),
-        time_()
+    Enrollment() : machine_(PROPOSED), seats_(), seatCount_(0), time_()
     {
         auto addToWaitingList = [this](const std::string& student) { waitingList_.push_back(student); };
-        auto drop = [this](const std::string& student)
+        auto drop = [this](const std::string& student) {
+            seats_.erase(student);
+            if (availableSeats() && !waitingList_.empty())
             {
-                seats_.erase(student);
-                if (availableSeats() && !waitingList_.empty())
+                seats_.insert(waitingList_.front());
+                waitingList_.pop_front();
+            }
+            for (auto it = waitingList_.begin(); it != waitingList_.end(); ++it)
+            {
+                if (*it == student)
                 {
-                    seats_.insert(waitingList_.front());
-                    waitingList_.pop_front();
+                    it = waitingList_.erase(it);
+                    break;
                 }
-                for (auto it = waitingList_.begin(); it != waitingList_.end(); ++it)
-                {
-                    if (*it == student)
-                    {
-                        it = waitingList_.erase(it);
-                        break;
-                    }
-                }
-            };
-        auto dropFreesSeat = [this](const std::string& student) { return seats_.find(student) != seats_.end() && waitingList_.empty(); };
-        auto dropFreeSeatForWaiter = [this](const std::string& student) { return seats_.find(student) != seats_.end() && !waitingList_.empty(); };
+            }
+        };
+        auto dropFreesSeat = [this](const std::string& student) {
+            return seats_.find(student) != seats_.end() && waitingList_.empty();
+        };
+        auto dropFreeSeatForWaiter = [this](const std::string& student) {
+            return seats_.find(student) != seats_.end() && !waitingList_.empty();
+        };
         auto seatsAvailable = [this](const std::string&) { return availableSeats() > 0; };
         auto enroll = [this](const std::string& student) { seats_.insert(student); };
-        auto announceOpen = [this]{ std::cout << "Open for enrollment with " << availableSeats() << " available seats" << std::endl; };
+        auto announceOpen = [this] {
+            std::cout << "Open for enrollment with " << availableSeats() << " available seats" << std::endl;
+        };
         auto storeTime = [this](const std::tm& time) { time_ = std::mktime(const_cast<std::tm*>(&time)); };
-        auto closeEnrollment = [this]
+        auto closeEnrollment = [this] {
+            std::cout << "Enrollment closed. Scheduled to start " << std::put_time(std::localtime(&time_), "%c")
+                      << " with " << seats_.size() << " students: ";
+            for (auto& s : seats_)
+                std::cout << s << " ";
+            std::cout << std::endl;
+            std::cout << "Waiting list: ";
+            while (!waitingList_.empty())
             {
-                std::cout << "Enrollment closed. Scheduled to start " << std::put_time(std::localtime(&time_), "%c") << " with "
-                          << seats_.size() << " students: ";
-                for (auto& s : seats_) std::cout << s << " ";
-                std::cout << std::endl;
-                std::cout << "Waiting list: ";
-                while (!waitingList_.empty())
-                {
-                    std::cout << waitingList_.front() << " ";
-                    waitingList_.pop_front();
-                }
-                std::cout << std::endl;
-            };
+                std::cout << waitingList_.front() << " ";
+                waitingList_.pop_front();
+            }
+            std::cout << std::endl;
+        };
 
-
-        machine_.onEntry(PROPOSED).invoke([]{ std::cout << "Enrollment proposed." << std::endl; });
+        machine_.onEntry(PROPOSED).invoke([] { std::cout << "Enrollment proposed." << std::endl; });
         machine_.onTransition(PROPOSED, SCHEDULED, &Enrollment::schedule).invoke(storeTime);
         machine_.onTransition(PROPOSED, DONE, &Enrollment::cancel);
 
@@ -664,21 +652,15 @@ public:
     void open(int seats) { machine_.handle(&Enrollment::open, seats); }
 
     void enroll(const std::string& student) { machine_.handle(&Enrollment::enroll, student); }
-    void drop(const std::string& student) {  machine_.handle(&Enrollment::drop, student); }
+    void drop(const std::string& student) { machine_.handle(&Enrollment::drop, student); }
 
     void close() { machine_.handle(&Enrollment::close); }
     void cancel() { machine_.handle(&Enrollment::cancel); }
 
-    State getState() const
-    {
-        return machine_.getState();
-    }
+    State getState() const { return machine_.getState(); }
 
 private:
-    int availableSeats() const
-    {
-        return seatCount_ - seats_.size();
-    }
+    int availableSeats() const { return seatCount_ - seats_.size(); }
 
     StateMachine<Enrollment, State> machine_;
 
@@ -688,7 +670,7 @@ private:
 
     std::time_t time_;
 };
-}
+} // namespace
 
 TEST(StateMachineTest, enrollmentExample)
 {

@@ -24,4 +24,4 @@ public:
     virtual ~ConfigurationWriteIf() {}
 };
 
-} // Data
+} // namespace Data

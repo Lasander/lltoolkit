@@ -1,7 +1,7 @@
-#include "../DataModel.hpp"
 #include "../../common/unittest/LogHelpers.hpp"
-#include "gtest/gtest.h"
+#include "../DataModel.hpp"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 using namespace testing;
 
@@ -12,7 +12,7 @@ namespace {
  * Test subscriber containing data of given type.
  * @tparam T data type
  */
-template<typename T>
+template <typename T>
 class Subscriber
 {
 public:
@@ -25,21 +25,12 @@ template <class T>
 class DataModelTest : public testing::Test
 {
 protected:
-	DataModelTest() :
-		data{},
-		pub{data.publisher()},
-		sub{}
-	{
-		currentSubscriber = &sub;
-	}
+    DataModelTest() : data{}, pub{data.publisher()}, sub{} { currentSubscriber = &sub; }
 
-	~DataModelTest()
-	{
-		currentSubscriber = nullptr;
-	}
+    ~DataModelTest() { currentSubscriber = nullptr; }
 
-	Common::ExpectNoErrorLogs noErrors;
-	DataModel<T> data;
+    Common::ExpectNoErrorLogs noErrors;
+    DataModel<T> data;
     Publisher<T>& pub;
     StrictMock<Subscriber<T>> sub;
 
@@ -47,22 +38,23 @@ public:
     /** Static link to current subscriber for free functions */
     static Subscriber<T>* currentSubscriber;
 };
-template <class T> Subscriber<T>* DataModelTest<T>::currentSubscriber = nullptr;
+template <class T>
+Subscriber<T>* DataModelTest<T>::currentSubscriber = nullptr;
 
-template<class T>
+template <class T>
 void notifyFuncReference(const T& data)
 {
-	DataModelTest<T>::currentSubscriber->notifyReference(data);
+    DataModelTest<T>::currentSubscriber->notifyReference(data);
 }
-template<class T>
+template <class T>
 void notifyFuncValue(T data)
 {
-	DataModelTest<T>::currentSubscriber->notifyValue(data);
+    DataModelTest<T>::currentSubscriber->notifyValue(data);
 }
-template<class T>
+template <class T>
 int notifyFuncEmpty()
 {
-	DataModelTest<T>::currentSubscriber->notifyEmpty();
+    DataModelTest<T>::currentSubscriber->notifyEmpty();
     return 99;
 }
 
@@ -182,7 +174,7 @@ TEST_F(IntDataModelTest, doubleSubscribe)
 {
     EXPECT_TRUE(pub.subscribe(sub, &notifyFuncEmpty<int>));
     {
-    	Common::ExpectErrorLog error;
+        Common::ExpectErrorLog error;
         EXPECT_FALSE(pub.subscribe(sub, &notifyFuncValue<int>));
     }
 
@@ -191,9 +183,9 @@ TEST_F(IntDataModelTest, doubleSubscribe)
 
     EXPECT_TRUE(pub.unsubscribe(sub));
     {
-    	Common::ExpectErrorLog error;
-    	EXPECT_FALSE(pub.unsubscribe(sub));
+        Common::ExpectErrorLog error;
+        EXPECT_FALSE(pub.unsubscribe(sub));
     }
 }
 
-} // Data
+} // namespace Data

@@ -16,9 +16,7 @@ public:
     /**
      * Construct CascadingConfigurationRead
      */
-    CascadingConfigurationRead(
-        const ConfigurationReadIf& configuration,
-        const ConfigurationReadIf& parentConfiguration);
+    CascadingConfigurationRead(const ConfigurationReadIf& configuration, const ConfigurationReadIf& parentConfiguration);
 
     virtual ~CascadingConfigurationRead();
 
@@ -29,8 +27,8 @@ public:
     ///@}
 
 private:
-	CascadingConfigurationRead(const CascadingConfigurationRead&);
-	CascadingConfigurationRead& operator=(const CascadingConfigurationRead&);
+    CascadingConfigurationRead(const CascadingConfigurationRead&);
+    CascadingConfigurationRead& operator=(const CascadingConfigurationRead&);
 
     const ConfigurationReadIf& configuration_;
     const ConfigurationReadIf& parentConfiguration_;

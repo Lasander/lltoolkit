@@ -1,9 +1,9 @@
 #include "../../common/unittest/LogHelpers.hpp"
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-#include <thread>
-#include <string>
 #include "../HeterogeneousRingBuffer.hpp"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+#include <string>
+#include <thread>
 
 using namespace testing;
 
@@ -32,7 +32,7 @@ TEST(HeterogeneousRingBuffer, IntRingBuffer)
 
 TEST(HeterogeneousRingBuffer, IntRingBufferMultipleThreads)
 {
-    using Queue = HeterogeneousRingBuffer<int, 4*24>;
+    using Queue = HeterogeneousRingBuffer<int, 4 * 24>;
 
     struct Context
     {
@@ -113,7 +113,7 @@ const T& element_cast(const ElementIf& element)
     return static_cast<const T&>(element);
 }
 
-}  // anonymous namespace
+} // anonymous namespace
 
 TEST(HeterogeneousRingBuffer, ElementRingBuffer)
 {
@@ -130,11 +130,11 @@ TEST(HeterogeneousRingBuffer, ElementRingBuffer)
 
         queue.enqueue(StringElement("Brown fox jumps over the lazy dog and does this and that"));
         EXPECT_EQ(3.1415, (element_cast<DoubleElement>(queue.dequeue())).data());
-        EXPECT_EQ(std::string("Brown fox jumps over the lazy dog and does this and that"), (element_cast<StringElement>(queue.dequeue())).data());
+        EXPECT_EQ(
+            std::string("Brown fox jumps over the lazy dog and does this and that"),
+            (element_cast<StringElement>(queue.dequeue())).data());
         EXPECT_TRUE(queue.isEmpty());
     }
 }
 
-
-
-} // Data
+} // namespace Data

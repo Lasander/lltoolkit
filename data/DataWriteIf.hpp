@@ -8,7 +8,7 @@ class DataWriteIf
 {
 public:
     /** Write @p data */
-	virtual void set(const DataType& data) = 0;
+    virtual void set(const DataType& data) = 0;
 
     virtual ~DataWriteIf() {}
 
@@ -21,4 +21,4 @@ private:
     DataWriteIf& operator=(const DataWriteIf&) = delete;
 };
 
-}
+} // namespace Data

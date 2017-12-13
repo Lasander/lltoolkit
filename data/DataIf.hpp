@@ -16,4 +16,4 @@ protected:
     DataIf() {}
 };
 
-}
+} // namespace Data

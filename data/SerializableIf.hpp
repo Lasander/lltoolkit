@@ -10,7 +10,7 @@ namespace Data {
 class SerializableIf
 {
 public:
-	/** Save item to @p output stream */
+    /** Save item to @p output stream */
     virtual bool serialize(std::ostream& output) const = 0;
 
     /** Load item from @p input stream */
@@ -22,4 +22,4 @@ public:
     virtual ~SerializableIf() {}
 };
 
-} // Data
+} // namespace Data

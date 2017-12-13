@@ -1,9 +1,9 @@
-#include "../HeterogeneousQueue.hpp"
 #include "../../common/unittest/LogHelpers.hpp"
-#include "gtest/gtest.h"
+#include "../HeterogeneousQueue.hpp"
 #include "gmock/gmock.h"
-#include <thread>
+#include "gtest/gtest.h"
 #include <string>
+#include <thread>
 
 using namespace testing;
 
@@ -78,9 +78,9 @@ static std::atomic<int> elementCounterS(0);
 class ElementIf
 {
 public:
-    ElementIf() {++elementCounterS;}
+    ElementIf() { ++elementCounterS; }
     virtual ElementId getId() const = 0;
-    virtual ~ElementIf() {--elementCounterS;}
+    virtual ~ElementIf() { --elementCounterS; }
 };
 
 class EmptyElement : public ElementIf
@@ -133,7 +133,7 @@ const T& element_cast(const ElementIf& element)
     return static_cast<const T&>(element);
 }
 
-}  // anonymous namespace
+} // anonymous namespace
 
 TEST(HeterogeneousQueue, ElementQueue)
 {
@@ -152,7 +152,9 @@ TEST(HeterogeneousQueue, ElementQueue)
 
             queue.enqueue(StringElement("Brown fox jumps over the lazy dog and does this and that"));
             EXPECT_EQ(3.1415, (element_cast<DoubleElement>(queue.dequeue())).data());
-            EXPECT_EQ(std::string("Brown fox jumps over the lazy dog and does this and that"), (element_cast<StringElement>(queue.dequeue())).data());
+            EXPECT_EQ(
+                std::string("Brown fox jumps over the lazy dog and does this and that"),
+                (element_cast<StringElement>(queue.dequeue())).data());
             EXPECT_TRUE(queue.isEmpty());
         }
 
@@ -164,6 +166,4 @@ TEST(HeterogeneousQueue, ElementQueue)
     EXPECT_EQ(0, elementCounterS);
 }
 
-
-
-} // Data
+} // namespace Data

@@ -18,7 +18,7 @@ TEST(TypeHelpersTest, tupleUniqueness)
     static_assert(!has_duplicate<decltype(myTuple)>::value, "Tuple is not unique");
 
     std::tuple<int, float, int> myTuple2(1, 1.0, 2);
-    //static_assert(has_duplicate<decltype(myTuple)>::value, "Tuple is unique"); // fails to compile
+    // static_assert(has_duplicate<decltype(myTuple)>::value, "Tuple is unique"); // fails to compile
 }
 
-} // Common
+} // namespace Common

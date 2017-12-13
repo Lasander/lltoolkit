@@ -1,9 +1,9 @@
-#include "../Configuration.hpp"
 #include "../CascadingConfigurationRead.hpp"
+#include "../Configuration.hpp"
 #include "../SerializableIf.hpp"
 // #include "../Protobuf/ProtobufDataModel.hpp"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 // #include "Test.pb.h" // Defines Number
 
@@ -24,7 +24,7 @@ class MockSerializable : public SerializableIf
 public:
     MockSerializable()
     {
-    	ON_CALL(*this, serialize(_)).WillByDefault(Return(true));
+        ON_CALL(*this, serialize(_)).WillByDefault(Return(true));
         ON_CALL(*this, deserialize(_)).WillByDefault(Return(true));
     }
 
@@ -33,10 +33,10 @@ public:
     MOCK_CONST_METHOD1(serialize, bool(std::ostream& output));
     MOCK_METHOD1(deserialize, bool(std::istream& input));
     MOCK_METHOD0(deserializationComplete, void());
-    
+
 private:
-	MockSerializable(const MockSerializable&) = delete;
-	MockSerializable& operator=(const MockSerializable&) = delete;
+    MockSerializable(const MockSerializable&) = delete;
+    MockSerializable& operator=(const MockSerializable&) = delete;
 };
 
 // template <typename DataType, typename Less = std::less<DataType>>
@@ -85,7 +85,6 @@ private:
 
 } // anonymous namespace
 
-
 TEST(Configuration, hasItem)
 {
     Configuration c;
@@ -102,7 +101,7 @@ TEST(Configuration, hasItem)
 //     using ModelType = NiceMock<MockProtobufDataModel<Number>>;
 //     ModelType number;
 //     number.setValue(1523423);
-	
+
 //     Configuration c;
 // 	EXPECT_CALL(number, serialize(_));
 //     EXPECT_TRUE(c.save("number", number));
@@ -163,4 +162,4 @@ TEST(Configuration, hasItem)
 //     EXPECT_EQ(20001, result.get().value());
 // }
 
-} // Data
+} // namespace Data

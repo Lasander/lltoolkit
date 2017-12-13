@@ -31,11 +31,11 @@ public:
     bool tryWait(size_t count = 1);
 
     /** Block to wait for a @p duration for @p count resources */
-    template<class Rep, class Period>
+    template <class Rep, class Period>
     bool waitFor(const std::chrono::duration<Rep, Period>& duration, size_t count = 1);
 
     /** Block to wait until a @p timePoint for @p count resources */
-    template<class Clock, class Duration>
+    template <class Clock, class Duration>
     bool waitUntil(const std::chrono::time_point<Clock, Duration>& timePoint, size_t count = 1);
 
     /** @return current resources count */
@@ -47,9 +47,7 @@ private:
     std::condition_variable condition_;
 };
 
-inline Semaphore::Semaphore(size_t count) : count_{count}
-{
-}
+inline Semaphore::Semaphore(size_t count) : count_{count} {}
 
 inline void Semaphore::notify(size_t count)
 {
@@ -72,7 +70,7 @@ inline bool Semaphore::tryWait(size_t count)
     return waitFor(std::chrono::nanoseconds::zero(), count);
 }
 
-template<class Rep, class Period>
+template <class Rep, class Period>
 bool Semaphore::waitFor(const std::chrono::duration<Rep, Period>& duration, size_t count)
 {
     std::unique_lock<std::mutex> lock{mutex_};
@@ -86,7 +84,7 @@ bool Semaphore::waitFor(const std::chrono::duration<Rep, Period>& duration, size
     return finished;
 }
 
-template<class Clock, class Duration>
+template <class Clock, class Duration>
 bool Semaphore::waitUntil(const std::chrono::time_point<Clock, Duration>& timePoint, size_t count)
 {
     std::unique_lock<std::mutex> lock{mutex_};

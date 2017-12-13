@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Publisher.hpp"
 #include "DataModelIf.hpp"
-#include <utility>
+#include "Publisher.hpp"
 #include <functional>
+#include <utility>
 
 namespace Data {
 
@@ -53,7 +53,7 @@ public:
     virtual const DataType& get() const;
 
     /** @return publisher */
-	virtual Publisher<DataType>& publisher();
+    virtual Publisher<DataType>& publisher();
 
     /** Set internal model value to @p data, but do not publish the change. */
     void setInternal(const DataType& data);
@@ -73,26 +73,18 @@ private:
 };
 
 template <typename DataType, typename Less>
-DataModel<DataType, Less>::DataModel() :
-	data_{},
-	publisher_{},
-	hasUnpublishedChanges_{false}
+DataModel<DataType, Less>::DataModel() : data_{}, publisher_{}, hasUnpublishedChanges_{false}
 {
 }
 
 template <typename DataType, typename Less>
-DataModel<DataType, Less>::DataModel(const DataType& data) :
-	data_(data),
-	publisher_{},
-	hasUnpublishedChanges_{false}
+DataModel<DataType, Less>::DataModel(const DataType& data) : data_(data), publisher_{}, hasUnpublishedChanges_{false}
 {
 }
 
 template <typename DataType, typename Less>
-DataModel<DataType, Less>::DataModel(DataType&& data) :
-	data_{std::forward<DataType>(data)},
-	publisher_{},
-	hasUnpublishedChanges_{false}
+DataModel<DataType, Less>::DataModel(DataType&& data)
+  : data_{std::forward<DataType>(data)}, publisher_{}, hasUnpublishedChanges_{false}
 {
 }
 
@@ -104,8 +96,8 @@ DataModel<DataType, Less>::~DataModel()
 template <typename DataType, typename Less>
 void DataModel<DataType, Less>::set(const DataType& data)
 {
-	setInternal(data);
-	publishPendingChanges();
+    setInternal(data);
+    publishPendingChanges();
 }
 
 template <typename DataType, typename Less>
@@ -123,8 +115,8 @@ Publisher<DataType>& DataModel<DataType, Less>::publisher()
 template <typename DataType, typename Less>
 void DataModel<DataType, Less>::setInternal(const DataType& data)
 {
-	const Less less{};
-	const bool differ = less(data_, data) || less(data, data_);
+    const Less less{};
+    const bool differ = less(data_, data) || less(data, data_);
 
     if (differ)
     {
@@ -136,11 +128,11 @@ void DataModel<DataType, Less>::setInternal(const DataType& data)
 template <typename DataType, typename Less>
 void DataModel<DataType, Less>::publishPendingChanges()
 {
-	if (hasUnpublishedChanges_)
-	{
-		hasUnpublishedChanges_ = false;
-		publisher_.notifySubscribers(data_);
-	}
+    if (hasUnpublishedChanges_)
+    {
+        hasUnpublishedChanges_ = false;
+        publisher_.notifySubscribers(data_);
+    }
 }
 
-}  // namespace Data
+} // namespace Data

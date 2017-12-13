@@ -79,20 +79,20 @@ class Synchronized : private Data, private Lock
 {
 public:
     /** Constructor template to copy a lock in addition to data construction */
-    template <typename ...Args>
+    template <typename... Args>
     Synchronized(const Lock& lock, Args&&... args);
 
     /** Constructor template to move a lock in addition to data construction */
-    template <typename ...Args>
+    template <typename... Args>
     Synchronized(Lock&& lock, Args&&... args);
 
     /** Constructor template to default construct a lock in addition to data construction */
-    template <typename ...Args>
+    template <typename... Args>
     Synchronized(Args&&... args);
 
     /** Arrow operator to conveniently perform single call transactions */
-    auto operator->();
-    auto operator->() const;
+    auto operator-> ();
+    auto operator-> () const;
 
     /** @return Transaction object to perform a series of calls under a single lock/unlock */
     auto makeTransaction();
@@ -152,37 +152,32 @@ private:
 
 // Synchronized implementation
 template <typename Data, typename Lock>
-template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(const Lock& lock, Args&&... args)
-  : Data(std::forward<Args>(args)...),
-    Lock(lock)
+template <typename... Args>
+Synchronized<Data, Lock>::Synchronized(const Lock& lock, Args&&... args) : Data(std::forward<Args>(args)...), Lock(lock)
 {
 }
 
 template <typename Data, typename Lock>
-template <typename ...Args>
+template <typename... Args>
 Synchronized<Data, Lock>::Synchronized(Lock&& lock, Args&&... args)
-: Data(std::forward<Args>(args)...),
-    Lock(std::forward<Lock>(lock))
+  : Data(std::forward<Args>(args)...), Lock(std::forward<Lock>(lock))
 {
 }
 
 template <typename Data, typename Lock>
-template <typename ...Args>
-Synchronized<Data, Lock>::Synchronized(Args&&... args)
-: Data(std::forward<Args>(args)...),
-    Lock()
+template <typename... Args>
+Synchronized<Data, Lock>::Synchronized(Args&&... args) : Data(std::forward<Args>(args)...), Lock()
 {
 }
 
 template <typename Data, typename Lock>
-auto Synchronized<Data, Lock>::operator->()
+auto Synchronized<Data, Lock>::operator-> ()
 {
     return makeTransaction();
 }
 
 template <typename Data, typename Lock>
-auto Synchronized<Data, Lock>::operator->() const
+auto Synchronized<Data, Lock>::operator-> () const
 {
     return makeTransaction();
 }
@@ -201,15 +196,13 @@ auto Synchronized<Data, Lock>::makeTransaction() const
 
 // Synchronized::Transaction implementation
 template <typename Data, typename Lock>
-Synchronized<Data, Lock>::Transaction::Transaction(Synchronized& obj)
-  : obj_(&obj)
+Synchronized<Data, Lock>::Transaction::Transaction(Synchronized& obj) : obj_(&obj)
 {
     obj_->Lock::lock(obj_);
 }
 
 template <typename Data, typename Lock>
-Synchronized<Data, Lock>::Transaction::Transaction(Transaction&& other)
-  : obj_(other.obj_)
+Synchronized<Data, Lock>::Transaction::Transaction(Transaction&& other) : obj_(other.obj_)
 {
     other.obj_ = nullptr;
 }
@@ -231,16 +224,14 @@ Data* Synchronized<Data, Lock>::Transaction::operator->()
 
 // Synchronized::ConstTransaction implementation
 template <typename Data, typename Lock>
-Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(const Synchronized& obj)
-  : obj_(&obj)
+Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(const Synchronized& obj) : obj_(&obj)
 {
     Synchronized* nonConstData = const_cast<Synchronized*>(obj_);
     nonConstData->Lock::lock(nonConstData);
 }
 
 template <typename Data, typename Lock>
-Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(ConstTransaction&& other)
-  : obj_(other.obj_)
+Synchronized<Data, Lock>::ConstTransaction::ConstTransaction(ConstTransaction&& other) : obj_(other.obj_)
 {
     other.obj_ = nullptr;
 }
@@ -261,4 +252,4 @@ const Data* Synchronized<Data, Lock>::ConstTransaction::operator->() const
     return obj_;
 }
 
-} // Common
+} // namespace Common

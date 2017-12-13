@@ -28,11 +28,10 @@ TEST(DataTest, moveConstructor)
 
 TEST(DataTest, setAndGet)
 {
-	Data<int> data;
+    Data<int> data;
     data.set(2);
 
     EXPECT_EQ(2, data.get());
 }
 
-
-} // Data
+} // namespace Data

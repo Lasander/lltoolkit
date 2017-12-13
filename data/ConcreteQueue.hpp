@@ -47,11 +47,7 @@ private:
 };
 
 template <typename T>
-ConcreteQueue<T>::ConcreteQueue() :
-    queue_(),
-    dequeuedElement_(nullptr),
-    semaphore_(0),
-    mutex_()
+ConcreteQueue<T>::ConcreteQueue() : queue_(), dequeuedElement_(nullptr), semaphore_(0), mutex_()
 {
 }
 
@@ -104,4 +100,4 @@ const T& ConcreteQueue<T>::dequeue()
     return *dequeuedElement_;
 }
 
-} // Data
+} // namespace Data

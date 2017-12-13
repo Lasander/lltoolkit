@@ -1,8 +1,8 @@
 #pragma once
 
-#include <map>
 #include <functional>
 #include <iostream>
+#include <map>
 
 namespace Data {
 
@@ -108,7 +108,9 @@ template <typename DataType>
 template <typename SubscriberType, typename InterfaceType, typename ReturnType>
 bool Publisher<DataType>::subscribe(SubscriberType& object, ReturnType (InterfaceType::*callback)(const DataType&))
 {
-    const std::function<void(const DataType&)> f = [&object, callback](const DataType& data) { (object.*callback)(data); };
+    const std::function<void(const DataType&)> f = [&object, callback](const DataType& data) {
+        (object.*callback)(data);
+    };
     return addSubscriber(&object, f);
 }
 
@@ -192,10 +194,10 @@ bool Publisher<DataType>::removeSubscriber(void* object)
 {
     if (subscribers_.erase(object) < 1)
     {
-    	std::cerr << "Failed to remove subscriber: non-existent" << std::endl;
+        std::cerr << "Failed to remove subscriber: non-existent" << std::endl;
         return false;
     }
     return true;
 }
 
-} // Data
+} // namespace Data

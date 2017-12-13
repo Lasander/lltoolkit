@@ -6,12 +6,10 @@
 namespace Data {
 
 /** Configuration provides a storage to save items */
-class ConfigurationIf :
-	public ConfigurationReadIf,
-    public ConfigurationWriteIf
+class ConfigurationIf : public ConfigurationReadIf, public ConfigurationWriteIf
 {
 public:
     virtual ~ConfigurationIf() {}
 };
 
-} // Data
+} // namespace Data
