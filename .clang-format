@@ -10,7 +10,7 @@ AlignAfterOpenBracket: AlwaysBreak
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Inline
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: true
@@ -27,10 +27,13 @@ BraceWrapping:
     BeforeElse: true
     IndentBraces: false
 BreakBeforeBraces: Custom
+BreakConstructorInitializers: BeforeColon
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 2
 IndentCaseLabels: true
 IndentWrappedFunctionNames: true
 KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
 PenaltyExcessCharacter: 10
 PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
@@ -41,10 +44,6 @@ SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-BreakConstructorInitializers: AfterColon
-ConstructorInitializerIndentWidth: 4
-
+SpaceAfterTemplateKeyword: true
 SortUsingDeclarations: true
-SpaceAfterTemplateKeyword: false
+SortIncludes: true
