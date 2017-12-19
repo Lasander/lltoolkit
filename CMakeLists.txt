@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
-set(CMAKE_ECLIPSE_VERSION "4.4" CACHE INTERNAL "Eclipse version" FORCE)
+
+if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
+    # Define C++14 stardard and llvm runtime to be in use
+    # This needs to be before project() definition, see https://public.kitware.com/Bug/view.php?id=15316#c37987
+    set(CMAKE_CXX_COMPILER_ARG1 "-std=c++14" CACHE STRING "C++ version for eclipse" FORCE)
+    set(CMAKE_ECLIPSE_VERSION "4.4" CACHE STRING "Eclipse version" FORCE)
+endif()
 
 project(LLToolkit)
 
