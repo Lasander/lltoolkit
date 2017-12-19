@@ -3,6 +3,8 @@
 This repo contains random trials, errors and works in progress exploring new concepts or ideas with C++.
 There's no real output other than the unit tests trying out the code using GTest.
 
+Also trialing using github and the services provided by it.
+
 ## Development
 
 Toolkit uses cmake. Running cmake should automatically download and make a temporary install of GTest (and GMock).
