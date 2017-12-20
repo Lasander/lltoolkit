@@ -2,6 +2,7 @@
 #include "../HeterogeneousQueue.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include <atomic>
 #include <string>
 #include <thread>
 

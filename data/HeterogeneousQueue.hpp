@@ -2,6 +2,7 @@
 
 #include "../common/Semaphore.hpp"
 #include <assert.h>
+#include <cstddef>
 #include <iostream>
 #include <type_traits>
 #include <vector>

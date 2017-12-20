@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 #include <iostream>
 #include <map> // for (ordered) multimap
+#include <memory>
 #include <queue>
 #include <set>
 #include <tuple>
