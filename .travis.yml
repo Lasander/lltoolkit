@@ -1,35 +1,20 @@
 language: cpp
 
 dist: trusty
-sudo: require
+sudo: false
 
-before_install:
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update -qq
-
-install:
-  - sudo apt-get install -qq g++-7
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
-
-script:
-  - mkdir -p build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release ..
-  - make -k VERBOSE=1
-  - make test
-
-# matrix:
-#   include:
-#     # works on Precise and Trusty
-#     - os: linux
-#       addons:
-#         apt:
-#           sources:
-#             - ubuntu-toolchain-r-test
-#           packages:
-#             - g++-7
-#       env:
-#         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+matrix:
+  include:
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
 #     # works on Trusty
 #     - os: linux
@@ -42,5 +27,14 @@ script:
 #       env:
 #         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
 
-# before_install:
-#     - eval "${MATRIX_EVAL}"
+before_install:
+    - eval "${MATRIX_EVAL}"
+
+install: true
+
+script:
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make -k VERBOSE=1
+  - make test
