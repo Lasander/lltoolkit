@@ -492,7 +492,7 @@ TEST_F(InitializedMockMachineTest, transitionWithRecursiveTransitionEvent)
     EXPECT_CALL(m, A21_Exit());
     EXPECT_CALL(m, A2_Exit());
     EXPECT_CALL(m, A_Exit());
-    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] { m.from_B1_to_C1(data); }));
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this] { m.from_B1_to_C1(data); }));
     EXPECT_CALL(m, B_Entry());
     EXPECT_CALL(m, B1_Entry());
     EXPECT_CALL(m, B1_Exit());
@@ -539,7 +539,7 @@ TEST_F(InitializedMockMachineTest, transitionWithMultipleRecursiveEvents)
     EXPECT_CALL(m, A21_Exit());
     EXPECT_CALL(m, A2_Exit());
     EXPECT_CALL(m, A_Exit());
-    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this, data] {
+    EXPECT_CALL(m, AB_action()).WillOnce(Invoke([this] {
         m.from_B1_to_C1(data);
         m.to_self();
     }));
