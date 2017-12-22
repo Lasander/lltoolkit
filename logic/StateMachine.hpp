@@ -528,7 +528,7 @@ auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(T& o
     -> TransitionBuilder&
 {
     auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args>(args)...); };
-    condition_ = std::make_shared<ActionFunc<Args...>>(f);
+    condition_ = std::make_shared<ConditionFunc<Args...>>(f);
     return *this;
 }
 
@@ -539,7 +539,7 @@ auto StateMachine<ConcreteMachine, State>::TransitionBuilder<Args...>::when(cons
     -> TransitionBuilder&
 {
     auto f = [&obj, function](Args... args) -> bool { return (obj.*function)(std::forward<Args>(args)...); };
-    condition_ = std::make_shared<ActionFunc<Args...>>(f);
+    condition_ = std::make_shared<ConditionFunc<Args...>>(f);
     return *this;
 }
 
