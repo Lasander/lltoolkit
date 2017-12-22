@@ -8,7 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "(lldb) logicTests",
-            "program": "${workspaceRoot}/build/logic/logicTests",
+            "program": "${workspaceRoot}/build/local/logic/logicTests",
             "args": [],
             "stopOnEntry": true,
             "cwd": "${workspaceRoot}"
@@ -17,7 +17,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "(lldb) commonTests",
-            "program": "${workspaceRoot}/build/common/commonTests",
+            "program": "${workspaceRoot}/build/local/common/commonTests",
             "args": [],
             "cwd": "${workspaceRoot}",
             "stopOnEntry": true
@@ -26,7 +26,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "(lldb) dataTests",
-            "program": "${workspaceRoot}/build/data/dataTests",
+            "program": "${workspaceRoot}/build/local/data/dataTests",
             "args": [],
             "cwd": "${workspaceRoot}",
             "stopOnEntry": true

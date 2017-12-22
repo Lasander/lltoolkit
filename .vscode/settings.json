@@ -1,5 +1,9 @@
 // Place your settings in this file to overwrite default and user settings.
 {
+    // cmake configuration
+    "cmake.buildDirectory": "${workspaceRoot}/build/local",
+    "cmake.installPrefix": "${workspaceRoot}/build/local/install",
+
     "search.exclude": {
         "**/build": true,
         "**/install": true,
