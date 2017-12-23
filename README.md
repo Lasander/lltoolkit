@@ -21,3 +21,4 @@ Toolkit includes configuration for vscode, which I've used with the following C+
 - twxs.cmake
 - vadimcn.vscode-lldb
 - vector-of-bool.cmake-tools
+- PeterJausovec.vscode-docker # to manage the docker containers

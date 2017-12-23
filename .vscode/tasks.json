@@ -59,6 +59,40 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+
+        // Ubuntu build environment with docker
+        {
+            "label": "setup_ubuntu_docker_environment",
+            "group": "build",
+            "type": "shell",
+            "command": "docker build . -t lltoolkit_ubuntu",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "run_ubuntu_docker",
+            "group": "build",
+            "type": "shell",
+            "command": "docker run --rm -it -v ${workspaceRoot}:/root/lltoolkit lltoolkit_ubuntu",
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "new"
+            },
+            "problemMatcher": []
         }
     ]
 }
