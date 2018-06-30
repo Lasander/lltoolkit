@@ -51,3 +51,12 @@ install (TARGETS lltoolkit DESTINATION bin)
 install (FILES "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp" DESTINATION include)
 
 # # add_subdirectory(doc)
+
+#-------------------------------------------------------------------------------
+# Default install path
+#-------------------------------------------------------------------------------
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(
+        CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install"
+        CACHE PATH "Default install path" FORCE)
+endif()
