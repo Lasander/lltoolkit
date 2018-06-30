@@ -162,14 +162,12 @@ bool Publisher<DataType>::unsubscribe(Object& object)
 }
 
 template <typename DataType>
-Publisher<DataType>::Publisher()
+Publisher<DataType>::Publisher() : subscribers_()
 {
 }
 
 template <typename DataType>
-Publisher<DataType>::~Publisher()
-{
-}
+Publisher<DataType>::~Publisher() = default;
 
 template <typename DataType>
 void Publisher<DataType>::notifySubscribers(const DataType& data)
