@@ -7,7 +7,7 @@ if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     set(CMAKE_ECLIPSE_VERSION "4.4" CACHE STRING "Eclipse version" FORCE)
 endif()
 
-project(LLToolkit)
+project(LLToolkit LANGUAGES CXX)
 
 # The version number.
 set(LLToolkit_VERSION_MAJOR 0)
