@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-    std::cout << "LLToolkit v" << LLToolkit_VERSION_MAJOR << "." << LLToolkit_VERSION_MINOR << std::endl;
+    std::cout << "ll-toolkit v" << LL_TOOLKIT_VERSION_MAJOR << "." << LL_TOOLKIT_VERSION_MINOR << std::endl;
 
     Common::Semaphore sem;
     sem.getCount();

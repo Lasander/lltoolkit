@@ -7,11 +7,11 @@ if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     set(CMAKE_ECLIPSE_VERSION "4.4" CACHE STRING "Eclipse version" FORCE)
 endif()
 
-project(LLToolkit LANGUAGES CXX)
+project(ll-toolkit LANGUAGES CXX)
 
 # The version number.
-set(LLToolkit_VERSION_MAJOR 0)
-set(LLToolkit_VERSION_MINOR 1)
+set(ll-toolkit_VERSION_MAJOR 0)
+set(ll-toolkit_VERSION_MINOR 1)
 
 include(CMakeToolsHelpers OPTIONAL)
 
@@ -44,10 +44,10 @@ add_subdirectory(data)
 add_subdirectory(logic)
 
 # add the executable
-add_executable(lltoolkit main.cpp)
+add_executable(ll-toolkit main.cpp)
 
 # add the install targets
-install (TARGETS lltoolkit DESTINATION bin)
+install (TARGETS ll-toolkit DESTINATION bin)
 install (FILES "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp" DESTINATION include)
 
 # # add_subdirectory(doc)
