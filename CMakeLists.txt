@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 
 if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     # Define C++14 stardard and llvm runtime to be in use
