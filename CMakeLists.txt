@@ -36,11 +36,12 @@ endif()
 
 # Testing support
 enable_testing()
-include("cmake/gtest.cmake")
 
-add_subdirectory(common) 
-add_subdirectory(data) 
-add_subdirectory(logic) 
+add_subdirectory(external)
+
+add_subdirectory(common)
+add_subdirectory(data)
+add_subdirectory(logic)
 
 # add the executable
 add_executable(lltoolkit main.cpp)
