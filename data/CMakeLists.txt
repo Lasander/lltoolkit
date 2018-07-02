@@ -40,7 +40,7 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT ll-toolkit-data-config DESTINATION share/ll-toolkit/cmake)
+install(EXPORT ll-toolkit-data-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share)
 export(TARGETS ll-toolkit-data FILE ll-toolkit-data-config.cmake)
 
 add_cxx_test(ll-toolkit-data-tests

@@ -25,7 +25,7 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT ll-toolkit-common-config DESTINATION share/ll-toolkit/cmake)
+install(EXPORT ll-toolkit-common-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share)
 export(TARGETS ll-toolkit-common FILE ll-toolkit-common-config.cmake)
 
  add_cxx_test(ll-toolkit-common-tests
