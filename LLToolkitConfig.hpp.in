@@ -1,3 +1,0 @@
-// The configured options and settings for LLToolkit
-#define LL_TOOLKIT_VERSION_MAJOR @ll-toolkit_VERSION_MAJOR@
-#define LL_TOOLKIT_VERSION_MINOR @ll-toolkit_VERSION_MINOR@

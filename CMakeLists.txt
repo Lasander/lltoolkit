@@ -7,27 +7,6 @@ if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     set(CMAKE_ECLIPSE_VERSION "4.4" CACHE STRING "Eclipse version" FORCE)
 endif()
 
-project(ll-toolkit LANGUAGES CXX)
-
-# Must use GNUInstallDirs to install libraries into correct
-# locations on all platforms.
-include(GNUInstallDirs)
-
-# The version number.
-set(ll-toolkit_VERSION_MAJOR 0)
-set(ll-toolkit_VERSION_MINOR 1)
-
-include(CMakeToolsHelpers OPTIONAL)
-
-# configure a header file to pass some of the CMake settings to the source code
-configure_file(
-    "${PROJECT_SOURCE_DIR}/LLToolkitConfig.hpp.in"
-    "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp"
-)
-# add the binary tree to the search path for include files
-# so that we will find the xxConfig.h
-include_directories("${PROJECT_BINARY_DIR}")
-
 # Append common c++ compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Werror")
 
@@ -46,19 +25,6 @@ add_subdirectory(common)
 add_subdirectory(data)
 add_subdirectory(logic)
 add_subdirectory(test_util)
-
-# add the executable
-add_executable(ll-toolkit main.cpp)
-
-target_link_libraries(ll-toolkit
-    ll-toolkit-common
-)
-
-# add the install targets
-install (TARGETS ll-toolkit DESTINATION bin)
-install (FILES "${PROJECT_BINARY_DIR}/LLToolkitConfig.hpp" DESTINATION include)
-
-# # add_subdirectory(doc)
 
 #-------------------------------------------------------------------------------
 # Default install path
