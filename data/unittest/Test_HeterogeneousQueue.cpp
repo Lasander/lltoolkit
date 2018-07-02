@@ -1,5 +1,5 @@
-#include "../../common/unittest/LogHelpers.hpp"
-#include "../HeterogeneousQueue.hpp"
+#include "test_util/LogHelpers.hpp"
+#include "data/HeterogeneousQueue.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <atomic>

@@ -1,4 +1,4 @@
-#include "../Data.hpp"
+#include "data/Data.hpp"
 #include "gtest/gtest.h"
 
 namespace Data {

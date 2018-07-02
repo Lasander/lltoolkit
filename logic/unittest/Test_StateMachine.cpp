@@ -1,8 +1,8 @@
-#include "../../common/unittest/LogHelpers.hpp"
+#include "test_util/LogHelpers.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-#include "../StateMachine.hpp"
+#include "logic/StateMachine.hpp"
 #include <iostream>
 #include <map>
 #include <string>

@@ -1,4 +1,4 @@
-#include "../../common/TypeHelpers.hpp"
+#include "common/TypeHelpers.hpp"
 #include "gtest/gtest.h"
 
 namespace Common {

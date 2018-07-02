@@ -9,6 +9,10 @@ endif()
 
 project(ll-toolkit LANGUAGES CXX)
 
+# Must use GNUInstallDirs to install libraries into correct
+# locations on all platforms.
+include(GNUInstallDirs)
+
 # The version number.
 set(ll-toolkit_VERSION_MAJOR 0)
 set(ll-toolkit_VERSION_MINOR 1)
@@ -34,17 +38,21 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-# Testing support
-enable_testing()
-
 add_subdirectory(external)
 
+# Testing support for local code
+enable_testing()
 add_subdirectory(common)
 add_subdirectory(data)
 add_subdirectory(logic)
+add_subdirectory(test_util)
 
 # add the executable
 add_executable(ll-toolkit main.cpp)
+
+target_link_libraries(ll-toolkit
+    ll-toolkit-common
+)
 
 # add the install targets
 install (TARGETS ll-toolkit DESTINATION bin)

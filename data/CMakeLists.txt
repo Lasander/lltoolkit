@@ -1,67 +1,47 @@
-cmake_minimum_required(VERSION 3.9)
-
-# find_package(Protobuf REQUIRED)
-# include_directories(${PROTOBUF_INCLUDE_DIRS})
-# protobuf_generate_cpp(DATA_PROTO_SRCS DATA_PROTO_HDRS unittest/Test.proto)
-
-project(ll-toolkit-data LANGUAGES CXX)
+project(ll-toolkit-data VERSION 0.1 LANGUAGES CXX)
 
 add_library(ll-toolkit-data
-    DataReadIf.hpp
-    DataWriteIf.hpp
-    DataIf.hpp
-    Data.hpp
-    DataModelReadIf.hpp
-    DataModelIf.hpp
-    DataModel.hpp
-    Publisher.hpp
-    SerializableIf.hpp
-	ConcreteQueue.hpp
-    ConfigurationReadIf.hpp
-    ConfigurationWriteIf.hpp
-    ConfigurationIf.hpp
-    Configuration.hpp
-    Configuration.cpp
-    CascadingConfigurationRead.hpp
-    CascadingConfigurationRead.cpp
-	HeterogeneousQueue.hpp
-	HeterogeneousRingBuffer.hpp
+    src/CascadingConfigurationRead.cpp
+    src/Configuration.cpp
 )
 
-set(PUBLIC_HEADERS
-    DataReadIf.hpp
-    DataWriteIf.hpp
-    DataIf.hpp
-    Data.hpp
-    DataModelReadIf.hpp
-    DataModelIf.hpp
-    DataModel.hpp
-    Publisher.hpp
-    SerializableIf.hpp
-    ConcreteQueue.hpp
-    ConfigurationReadIf.hpp
-    ConfigurationWriteIf.hpp
-    ConfigurationIf.hpp
-    Configuration.hpp
-    CascadingConfigurationRead.hpp
-    HeterogeneousQueue.hpp
-    HeterogeneousRingBuffer.hpp
-)
-set_target_properties(ll-toolkit-data
-    PROPERTIES PUBLIC_HEADER
-        "${PUBLIC_HEADERS}"
+target_include_directories(ll-toolkit-data
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        src
 )
 
-INSTALL(
-    TARGETS
-        ll-toolkit-data
-    LIBRARY DESTINATION
-        data/lib
-    ARCHIVE DESTINATION
-        data/lib
-    PUBLIC_HEADER DESTINATION
-        data/include
+# target_compile_features(ll-toolkit-data
+#     PUBLIC
+#         cxx_auto_type
+#     PRIVATE
+#         cxx_variadic_templates)
+
+target_link_libraries(ll-toolkit-data
+    ll-toolkit-common
 )
+
+install(
+    TARGETS ll-toolkit-data
+    EXPORT ll-toolkit-data-config
+    LIBRARY DESTINATION data/lib
+    ARCHIVE DESTINATION data/lib
+    RUNTIME DESTINATION data/bin
+)
+install(
+    DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# This makes the project importable from the install directory
+# Put config file in per-project dir (name MUST match), can also
+# just go into 'cmake'.
+install(EXPORT ll-toolkit-data-config DESTINATION share/ll-toolkit/cmake)
+
+# This makes the project importable from the build directory
+export(TARGETS ll-toolkit-data FILE ll-toolkit-data-config.cmake)
 
 add_cxx_test(ll-toolkit-data-tests
     unittest/Test_ConcreteQueue.cpp
@@ -74,4 +54,5 @@ add_cxx_test(ll-toolkit-data-tests
 
 target_link_libraries(ll-toolkit-data-tests
     ll-toolkit-data
+    ll-toolkit-test-util
 )

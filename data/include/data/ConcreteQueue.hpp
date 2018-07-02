@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/Semaphore.hpp"
+#include "common/Semaphore.hpp"
 #include <deque>
 
 namespace Data {

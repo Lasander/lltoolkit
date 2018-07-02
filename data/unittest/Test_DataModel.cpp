@@ -1,5 +1,5 @@
-#include "../../common/unittest/LogHelpers.hpp"
-#include "../DataModel.hpp"
+#include "test_util/LogHelpers.hpp"
+#include "data/DataModel.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 

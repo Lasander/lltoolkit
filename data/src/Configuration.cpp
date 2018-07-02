@@ -1,10 +1,10 @@
-#include "Configuration.hpp"
+#include "data/Configuration.hpp"
+#include "data/SerializableIf.hpp"
 #include <iostream>
 #include <sstream>
-#include "SerializableIf.hpp"
 
 namespace Data {
-    
+
 Configuration::Configuration() {}
 
 Configuration::~Configuration() {}
@@ -20,7 +20,7 @@ Configuration& Configuration::operator=(const Configuration& rhs)
     {
         items_ = rhs.items_;
     }
-    
+
     return *this;
 }
 
@@ -43,7 +43,7 @@ bool Configuration::save(const std::string& key, const SerializableIf& item)
         items_[key] = stream.str();
         return true;
     }
-    
+
     return false;
 }
 

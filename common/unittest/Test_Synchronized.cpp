@@ -1,4 +1,4 @@
-#include "../../common/Synchronized.hpp"
+#include "common/Synchronized.hpp"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <iostream>
