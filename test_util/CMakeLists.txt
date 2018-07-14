@@ -1,5 +1,7 @@
 project(ll-toolkit-test-util VERSION 0.1 LANGUAGES CXX)
 
+include(GNUInstallDirs)
+
 add_library(ll-toolkit-test-util INTERFACE)
 
 target_include_directories(ll-toolkit-test-util
@@ -11,9 +13,10 @@ target_include_directories(ll-toolkit-test-util
 install(
     TARGETS ll-toolkit-test-util
     EXPORT ll-toolkit-test-util-config
-    LIBRARY DESTINATION test-util/lib
-    ARCHIVE DESTINATION test-util/lib
-    RUNTIME DESTINATION test-util/bin
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(
     DIRECTORY include/
