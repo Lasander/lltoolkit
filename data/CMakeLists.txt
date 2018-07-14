@@ -24,7 +24,8 @@ target_include_directories(ll-toolkit-data
 #         cxx_variadic_templates)
 
 target_link_libraries(ll-toolkit-data
-    ll-toolkit-common
+    PUBLIC
+        ll-toolkit-common
 )
 
 install(
@@ -53,6 +54,7 @@ add_cxx_test(ll-toolkit-data-tests
 )
 
 target_link_libraries(ll-toolkit-data-tests
-    ll-toolkit-data
-    ll-toolkit-test-util
+    PRIVATE
+        ll-toolkit-data
+        ll-toolkit-test-util
 )

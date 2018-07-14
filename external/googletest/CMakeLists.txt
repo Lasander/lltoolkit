@@ -16,7 +16,7 @@ endif()
 #
 function(add_cxx_test name)
     add_executable(${name} ${ARGN})
-    target_link_libraries(${name} gmock gtest gtest_main)
+    target_link_libraries(${name} PUBLIC gmock gtest gtest_main)
     add_test(NAME ${name} COMMAND ${name})
     install(TARGETS ${name} DESTINATION bin/tests)
 endfunction(add_cxx_test)

@@ -34,5 +34,6 @@ export(TARGETS ll-toolkit-common FILE ll-toolkit-common-config.cmake)
 )
 
 target_link_libraries(ll-toolkit-common-tests
-    ll-toolkit-common
+    PRIVATE
+        ll-toolkit-common
 )

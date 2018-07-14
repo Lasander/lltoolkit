@@ -39,6 +39,7 @@ add_cxx_test(ll-toolkit-logic-tests
 )
 
 target_link_libraries(ll-toolkit-logic-tests
-    ll-toolkit-logic
-    ll-toolkit-test-util
+	PRIVATE
+		ll-toolkit-logic
+		ll-toolkit-test-util
 )
