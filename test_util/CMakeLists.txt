@@ -26,7 +26,7 @@ install(
 # This makes the project importable from the install directory
 # Put config file in per-project dir (name MUST match), can also
 # just go into 'cmake'.
-install(EXPORT ll-toolkit-test-util-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share)
+install(EXPORT ll-toolkit-test-util-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share/cmake)
 
 # This makes the project importable from the build directory
 export(TARGETS ll-toolkit-test-util FILE ll-toolkit-test-util-config.cmake)

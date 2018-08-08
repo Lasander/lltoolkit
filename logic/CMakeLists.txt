@@ -31,7 +31,7 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT ll-toolkit-logic-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share/ll-toolkit/cmake)
+install(EXPORT ll-toolkit-logic-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share/cmake)
 export(TARGETS ll-toolkit-logic FILE ll-toolkit-logic-config.cmake)
 
 add_cxx_test(ll-toolkit-logic-tests
