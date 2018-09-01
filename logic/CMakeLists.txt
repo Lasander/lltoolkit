@@ -36,6 +36,7 @@ export(TARGETS ll-toolkit-logic FILE ll-toolkit-logic-config.cmake)
 
 add_cxx_test(ll-toolkit-logic-tests
 	unittest/Test_StateMachine.cpp
+	unittest/Test_StateMachine2.cpp
 )
 
 target_link_libraries(ll-toolkit-logic-tests
