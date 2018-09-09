@@ -5,6 +5,10 @@ if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     # This needs to be before project() definition, see https://public.kitware.com/Bug/view.php?id=15316#c37987
     set(CMAKE_CXX_COMPILER_ARG1 "-std=c++14" CACHE STRING "C++ version for eclipse" FORCE)
     set(CMAKE_ECLIPSE_VERSION "4.4" CACHE STRING "Eclipse version" FORCE)
+
+    # Do not generate subprojects
+    set(CMAKE_ECLIPSE_GENERATE_LINKED_RESOURCES FALSE CACHE BOOL
+        "Do not generate linked resource to the subprojects and to the source files within targets" FORCE)
 endif()
 
 # Append common c++ compiler flags
