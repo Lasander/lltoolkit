@@ -16,7 +16,7 @@ public:
     /** @return publisher */
     virtual Publisher<DataType>& publisher() = 0;
 
-    virtual ~DataModelReadIf() {}
+    ~DataModelReadIf() override {}
 
 protected:
     DataModelReadIf() {}

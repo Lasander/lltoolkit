@@ -11,16 +11,16 @@ class Configuration final : public ConfigurationIf
 {
 public:
     Configuration();
-    virtual ~Configuration();
+    ~Configuration() override;
 
     Configuration(const Configuration& rhs);
     Configuration& operator=(const Configuration& rhs);
 
-    virtual bool load(const std::string& key, SerializableIf& item) const override;
-    virtual bool save(const std::string& key, const SerializableIf& item) override;
-    virtual bool hasItem(const std::string& key) const override;
-    virtual void removeItem(const std::string& key) override;
-    virtual void clearItems() override;
+    bool load(const std::string& key, SerializableIf& item) const override;
+    bool save(const std::string& key, const SerializableIf& item) override;
+    bool hasItem(const std::string& key) const override;
+    void removeItem(const std::string& key) override;
+    void clearItems() override;
 
 private:
     std::map<std::string, std::string> items_;

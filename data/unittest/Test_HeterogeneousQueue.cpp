@@ -88,7 +88,7 @@ class EmptyElement : public ElementIf
 {
 public:
     static const ElementId ID_T = EMPTY_ELEMENT;
-    virtual ElementId getId() const { return ID_T; }
+    ElementId getId() const override { return ID_T; }
 
     EmptyElement() = default;
     EmptyElement(EmptyElement&&) {}
@@ -106,7 +106,7 @@ public:
     Element(DataType&& data) : data_{std::move(data)} {}
     Element(const Element& other) : data_{other.data_} {}
     Element(Element&& other) : data_{std::move(other.data_)} {}
-    ~Element() = default;
+    ~Element() override = default;
 
     Element& operator=(Element&& other)
     {
@@ -116,7 +116,7 @@ public:
         }
         return *this;
     }
-    virtual ElementId getId() const { return ID_T; }
+    ElementId getId() const override { return ID_T; }
     const DataType& data() const { return data_; }
 
 private:

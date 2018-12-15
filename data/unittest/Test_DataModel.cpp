@@ -27,7 +27,7 @@ class DataModelTest : public testing::Test
 protected:
     DataModelTest() : data{}, pub{data.publisher()}, sub{} { currentSubscriber = &sub; }
 
-    ~DataModelTest() { currentSubscriber = nullptr; }
+    ~DataModelTest() override { currentSubscriber = nullptr; }
 
     Common::ExpectNoErrorLogs noErrors;
     DataModel<T> data;

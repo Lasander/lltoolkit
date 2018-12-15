@@ -10,7 +10,7 @@ template <typename DataType>
 class DataModelIf : public DataModelReadIf<DataType>, public DataWriteIf<DataType>
 {
 public:
-    virtual ~DataModelIf() {}
+    ~DataModelIf() override {}
 
 protected:
     DataModelIf() {}

@@ -85,7 +85,7 @@ class EmptyElement : public ElementIf
 {
 public:
     static const ElementId ID_T = EMPTY_ELEMENT;
-    virtual ElementId getId() const { return ID_T; }
+    ElementId getId() const override { return ID_T; }
 };
 
 template <ElementId ID, typename DataType>
@@ -95,7 +95,7 @@ public:
     static const ElementId ID_T = ID;
     Element() : data_{} {}
     Element(const DataType& data) : data_{data} {}
-    virtual ElementId getId() const { return ID_T; }
+    ElementId getId() const override { return ID_T; }
     const DataType& data() const { return data_; }
 
 private:

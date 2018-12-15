@@ -18,12 +18,12 @@ public:
      */
     CascadingConfigurationRead(const ConfigurationReadIf& configuration, const ConfigurationReadIf& parentConfiguration);
 
-    virtual ~CascadingConfigurationRead();
+    ~CascadingConfigurationRead() override;
 
     /** @defgroup ConfigurationReadIf implementation */
     ///@{
-    virtual bool load(const std::string& key, SerializableIf& item) const override;
-    virtual bool hasItem(const std::string& key) const override;
+    bool load(const std::string& key, SerializableIf& item) const override;
+    bool hasItem(const std::string& key) const override;
     ///@}
 
 private:

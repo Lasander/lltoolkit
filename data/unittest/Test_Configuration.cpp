@@ -28,7 +28,7 @@ public:
         ON_CALL(*this, deserialize(_)).WillByDefault(Return(true));
     }
 
-    virtual ~MockSerializable() {}
+    ~MockSerializable() override {}
 
     MOCK_CONST_METHOD1(serialize, bool(std::ostream& output));
     MOCK_METHOD1(deserialize, bool(std::istream& input));

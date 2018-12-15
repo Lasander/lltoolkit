@@ -28,19 +28,19 @@ public:
     Data(DataType&& data);
 
     /** Virtual dtor */
-    virtual ~Data();
+    ~Data() override;
 
     /**
      * Set model value
      *
      * @param data New value
      */
-    virtual void set(const DataType& data);
+    void set(const DataType& data) override;
 
     /**
      * @return Model value
      */
-    virtual const DataType& get() const;
+    const DataType& get() const override;
 
 private:
     /** Model data */

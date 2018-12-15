@@ -9,7 +9,7 @@ namespace Data {
 class ConfigurationIf : public ConfigurationReadIf, public ConfigurationWriteIf
 {
 public:
-    virtual ~ConfigurationIf() {}
+    ~ConfigurationIf() override {}
 };
 
 } // namespace Data

@@ -38,22 +38,22 @@ public:
     DataModel(DataType&& data);
 
     /** Virtual dtor */
-    virtual ~DataModel();
+    ~DataModel() override;
 
     /**
      * Set model value
      *
      * @param data New value
      */
-    virtual void set(const DataType& data);
+    void set(const DataType& data) override;
 
     /**
      * @return Model value
      */
-    virtual const DataType& get() const;
+    const DataType& get() const override;
 
     /** @return publisher */
-    virtual Publisher<DataType>& publisher();
+    Publisher<DataType>& publisher() override;
 
     /** Set internal model value to @p data, but do not publish the change. */
     void setInternal(const DataType& data);
