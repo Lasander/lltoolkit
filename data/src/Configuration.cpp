@@ -5,9 +5,9 @@
 
 namespace Data {
 
-Configuration::Configuration() {}
+Configuration::Configuration() = default;
 
-Configuration::~Configuration() {}
+Configuration::~Configuration() = default;
 
 Configuration::Configuration(const Configuration& rhs) :
     items_(rhs.items_)
@@ -62,4 +62,4 @@ void Configuration::clearItems()
     items_.clear();
 }
 
-} // Data
+} // namespace Data
