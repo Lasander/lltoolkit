@@ -44,7 +44,7 @@ install(
 install(EXPORT ll-toolkit-data-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share)
 export(TARGETS ll-toolkit-data FILE ll-toolkit-data-config.cmake)
 
-add_cxx_test(ll-toolkit-data-tests
+add_gtest(ll-toolkit-data-tests
     unittest/Test_ConcreteQueue.cpp
     unittest/Test_Data.cpp
     unittest/Test_DataModel.cpp

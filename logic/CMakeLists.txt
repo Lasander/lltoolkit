@@ -34,8 +34,8 @@ install(
 install(EXPORT ll-toolkit-logic-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share/cmake)
 export(TARGETS ll-toolkit-logic FILE ll-toolkit-logic-config.cmake)
 
-add_cxx_test(ll-toolkit-logic-tests
-	unittest/Test_StateMachine.cpp
+add_gtest(ll-toolkit-logic-tests
+	# unittest/Test_StateMachine.cpp
 	unittest/Test_StateMachine2.cpp
 )
 

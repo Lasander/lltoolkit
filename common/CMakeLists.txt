@@ -28,7 +28,7 @@ install(
 install(EXPORT ll-toolkit-common-config DESTINATION ${CMAKE_INSTALL_LIBDIR}/share)
 export(TARGETS ll-toolkit-common FILE ll-toolkit-common-config.cmake)
 
-add_cxx_test(ll-toolkit-common-tests
+add_gtest(ll-toolkit-common-tests
     unittest/Test_Synchronized.cpp
     unittest/Test_TypeHelpers.cpp
 )

@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.9)
 
+project(ll-toolkit VERSION 0.1 LANGUAGES CXX)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+
 if("${CMAKE_EXTRA_GENERATOR}" MATCHES "Eclipse")
     # Define C++14 stardard and llvm runtime to be in use
     # This needs to be before project() definition, see https://public.kitware.com/Bug/view.php?id=15316#c37987
@@ -21,7 +25,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-add_subdirectory(external)
+find_package(LL-Gtest REQUIRED)
 
 # Testing support for local code
 enable_testing()
